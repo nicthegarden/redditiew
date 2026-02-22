@@ -675,48 +675,72 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 			m.detailScrollY = 0
 			return m, nil, true
 		case "up":
-			// Up arrow: navigate posts if not showing details, else scroll content
-			if !m.showDetails && len(m.filteredPosts) > 0 {
-				// Navigate to previous post
+			// Up arrow: Smart navigation in comments
+			// If at top of comments, navigate to previous post
+			// Otherwise, scroll up within comments
+			if m.showDetails && m.showComments && len(m.filteredPosts) > 0 {
+				// In comments view
+				if m.commentsScrollY == 0 {
+					// At top of comments - navigate to previous post
+					idx := m.list.Index()
+					if idx > 0 {
+						m.list.CursorUp()
+						m.commentsScrollY = 0
+						m.detailScrollY = 0
+						m.showComments = false // Auto-close comments for new post
+					}
+				} else {
+					// Not at top - scroll up within comments
+					m.commentsScrollY--
+				}
+			} else if !m.showDetails && len(m.filteredPosts) > 0 {
+				// Navigate to previous post in list view
 				idx := m.list.Index()
 				if idx > 0 {
 					m.list.CursorUp()
 					m.detailScrollY = 0
 					m.commentsScrollY = 0
 				}
-			} else if m.showDetails {
-				// Scroll content when details are shown
-				if m.showComments {
-					if m.commentsScrollY > 0 {
-						m.commentsScrollY--
-					}
-				} else {
-					if m.detailScrollY > 0 {
-						m.detailScrollY--
-					}
+			} else if m.showDetails && !m.showComments {
+				// Scroll up in post detail view
+				if m.detailScrollY > 0 {
+					m.detailScrollY--
 				}
 			}
 			return m, nil, true
 		case "down":
-			// Down arrow: navigate posts if not showing details, else scroll content
-			if !m.showDetails && len(m.filteredPosts) > 0 {
-				// Navigate to next post
+			// Down arrow: Smart navigation in comments
+			// If at bottom of comments, navigate to next post
+			// Otherwise, scroll down within comments
+			if m.showDetails && m.showComments && len(m.filteredPosts) > 0 {
+				// In comments view
+				if m.commentsScrollY >= m.commentsMaxScroll {
+					// At bottom of comments - navigate to next post
+					idx := m.list.Index()
+					if idx < len(m.filteredPosts)-1 {
+						m.list.CursorDown()
+						m.commentsScrollY = 0
+						m.detailScrollY = 0
+						m.showComments = false // Auto-close comments for new post
+					}
+				} else {
+					// Not at bottom - scroll down within comments
+					if m.commentsScrollY < m.commentsMaxScroll {
+						m.commentsScrollY++
+					}
+				}
+			} else if !m.showDetails && len(m.filteredPosts) > 0 {
+				// Navigate to next post in list view
 				idx := m.list.Index()
 				if idx < len(m.filteredPosts)-1 {
 					m.list.CursorDown()
 					m.detailScrollY = 0
 					m.commentsScrollY = 0
 				}
-			} else if m.showDetails {
-				// Scroll content when details are shown
-				if m.showComments {
-					if m.commentsScrollY < m.commentsMaxScroll {
-						m.commentsScrollY++
-					}
-				} else {
-					if m.detailScrollY < m.detailMaxScroll {
-						m.detailScrollY++
-					}
+			} else if m.showDetails && !m.showComments {
+				// Scroll down in post detail view
+				if m.detailScrollY < m.detailMaxScroll {
+					m.detailScrollY++
 				}
 			}
 			return m, nil, true
