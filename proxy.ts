@@ -86,6 +86,42 @@ const server = http.createServer((req, res) => {
     
     const proxyReq = https.request(options, (proxyRes) => {
       let data = ''
+      
+      // Handle redirects
+      if (proxyRes.statusCode === 301 || proxyRes.statusCode === 302) {
+        const location = proxyRes.headers.location
+        if (location) {
+          console.log(`Redirect ${proxyRes.statusCode}: ${location}`)
+          const url = new URL(location)
+          const redirectOptions = {
+            hostname: url.hostname,
+            path: url.pathname + url.search,
+            method: 'GET' as const,
+            headers: {
+              'User-Agent': 'redditview/1.0'
+            }
+          }
+          
+          const redirectReq = https.request(redirectOptions, (redirectRes) => {
+            let redirectData = ''
+            redirectRes.on('data', chunk => redirectData += chunk)
+            redirectRes.on('end', () => {
+              res.writeHead(200, {
+                'Content-Type': redirectRes.headers['content-type'] || 'text/html',
+                'Access-Control-Allow-Origin': '*'
+              })
+              res.end(redirectData)
+            })
+          })
+          redirectReq.on('error', () => {
+            res.writeHead(500)
+            res.end('Redirect error')
+          })
+          redirectReq.setTimeout(10000)
+          return
+        }
+      }
+
       proxyRes.on('data', chunk => data += chunk)
       proxyRes.on('end', () => {
         // Rate limited - retry with exponential backoff
