@@ -1,0 +1,17 @@
+{
+  "tui": {
+    "default_subreddit": "golang",
+    "posts_per_page": 50,
+    "list_height": 12,
+    "max_title_length": 80
+  },
+  "web": {
+    "default_subreddit": "golang",
+    "posts_per_page": 20,
+    "theme": "dark"
+  },
+  "api": {
+    "base_url": "http://localhost:3002/api",
+    "timeout_seconds": 10
+  }
+}
