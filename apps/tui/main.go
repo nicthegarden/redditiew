@@ -88,7 +88,7 @@ func loadConfig() error {
 	if err != nil {
 		// If not found, use defaults
 		appConfig = AppConfig{}
-		appConfig.TUI.DefaultSubreddit = "golang"
+		appConfig.TUI.DefaultSubreddit = "sysadmin"
 		appConfig.TUI.PostsPerPage = 50
 		appConfig.TUI.ListHeight = 10
 		appConfig.TUI.MaxTitleLength = 80
@@ -104,7 +104,7 @@ func loadConfig() error {
 	
 	// Set defaults for any missing values
 	if appConfig.TUI.DefaultSubreddit == "" {
-		appConfig.TUI.DefaultSubreddit = "golang"
+		appConfig.TUI.DefaultSubreddit = "sysadmin"
 	}
 	if appConfig.TUI.PostsPerPage == 0 {
 		appConfig.TUI.PostsPerPage = 50
@@ -248,12 +248,96 @@ func (c *APIClient) SearchPosts(query string) ([]RedditPostData, error) {
 	return posts, nil
 }
 
+// FetchComments fetches top-level comments for a post
+func (c *APIClient) FetchComments(subreddit, postID string) ([]*Comment, error) {
+	commentsURL := fmt.Sprintf("%s/r/%s/comments/%s/", c.baseURL, subreddit, postID)
+	
+	resp, err := http.Get(commentsURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	data, _ := io.ReadAll(resp.Body)
+
+	// Reddit returns an array with [posts, comments]
+	var result []map[string]interface{}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse comments: %w", err)
+	}
+
+	if len(result) < 2 {
+		return nil, nil
+	}
+
+	// Extract comments from the second element
+	commentsData := result[1]
+	if _, ok := commentsData["data"]; !ok {
+		return nil, nil
+	}
+
+	dataMap := commentsData["data"].(map[string]interface{})
+	childrenInterface := dataMap["children"].([]interface{})
+
+	comments := make([]*Comment, 0)
+	for _, childInterface := range childrenInterface {
+		childMap := childInterface.(map[string]interface{})
+		kind, ok := childMap["kind"].(string)
+		if !ok || kind != "t1" {
+			continue // Skip non-comments
+		}
+
+		data, ok := childMap["data"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		comment := &Comment{
+			Author: toString(data["author"]),
+			Body:   toString(data["body"]),
+			Score:  toInt(data["score"]),
+		}
+
+		if idVal, ok := data["id"].(string); ok {
+			comment.ID = idVal
+		}
+
+		comments = append(comments, comment)
+		if len(comments) >= 5 {
+			break // Limit to top 5 comments
+		}
+	}
+
+	return comments, nil
+}
+
+// Helper functions for type conversions
+func toString(v interface{}) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
+}
+
+func toInt(v interface{}) int {
+	switch val := v.(type) {
+	case float64:
+		return int(val)
+	case int:
+		return val
+	}
+	return 0
+}
+
 // ============= Main Model =============
 
 type Model struct {
 	// Post Management
 	posts         []RedditPostData
 	filteredPosts []RedditPostData
+	
+	// Comments
+	comments      []*Comment
 	
 	// List component
 	list list.Model
@@ -330,6 +414,11 @@ type searchResultsMsg struct {
 	error  error
 }
 
+type commentsLoadedMsg struct {
+	comments []*Comment
+	error    error
+}
+
 // ============= Commands =============
 
 func (m Model) loadPosts(subreddit string) tea.Cmd {
@@ -352,6 +441,13 @@ func (m Model) searchReddit(query string) tea.Cmd {
 			return searchResultsMsg{nil, query, err}
 		}
 		return searchResultsMsg{posts, query, nil}
+	}
+}
+
+func (m Model) loadComments(subreddit, postID string) tea.Cmd {
+	return func() tea.Msg {
+		comments, err := m.client.FetchComments(subreddit, postID)
+		return commentsLoadedMsg{comments, err}
 	}
 }
 
@@ -401,6 +497,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		m.showDetails = false
 		m.detailScrollY = 0
+		return m, nil
+	
+	case commentsLoadedMsg:
+		if msg.error != nil {
+			m.error = msg.error.Error()
+		} else {
+			m.comments = msg.comments
+		}
 		return m, nil
 		
 	case tea.WindowSizeMsg:
@@ -589,6 +693,8 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		if len(m.filteredPosts) > 0 && m.list.Index() < len(m.filteredPosts) {
 			m.showDetails = true
 			m.detailScrollY = 0
+			post := m.filteredPosts[m.list.Index()]
+			return m, m.loadComments(m.subreddit, post.ID), true
 		}
 		return m, nil, true
 	}
@@ -734,33 +840,59 @@ func (m Model) renderDetailsSection(height int) string {
 			post.Author, post.SubName, formatNum(post.Score), formatNum(post.Comments))))
 	
 	// Content
+	var contentLines []string
 	if post.SelfText != "" {
 		content := wrapText(post.SelfText, m.windowWidth-4)
-		lines := strings.Split(content, "\n")
-		
-		// Apply scrolling
-		startLine := m.detailScrollY
-		endLine := startLine + height - 3
-		if endLine > len(lines) {
-			endLine = len(lines)
-		}
-		
-		// Calculate max scroll
-		m.detailMaxScroll = max(0, len(lines)-height+3)
-		
-		if startLine < len(lines) {
-			visibleLines := lines[startLine:endLine]
-			sb.WriteString(strings.Join(visibleLines, "\n"))
-		}
+		contentLines = strings.Split(content, "\n")
 	}
 	
-	// URL
+	// Add URL if present
 	if post.URL != "" && !strings.HasPrefix(post.URL, "https://www.reddit.com") {
+		contentLines = append(contentLines, "")
 		displayURL := post.URL
 		if len(displayURL) > m.windowWidth-10 {
 			displayURL = displayURL[:m.windowWidth-13] + "..."
 		}
-		sb.WriteString(lipgloss.NewStyle().Foreground(colorBlue).Render("\n🔗 " + displayURL))
+		contentLines = append(contentLines, "🔗 "+displayURL)
+	}
+	
+	// Add comments separator
+	if len(m.comments) > 0 {
+		contentLines = append(contentLines, "")
+		contentLines = append(contentLines, "━━━━ TOP COMMENTS ━━━━")
+		contentLines = append(contentLines, "")
+		
+		// Add comments
+		for i, comment := range m.comments {
+			commentText := fmt.Sprintf("💬 u/%s  ⬆ %s", comment.Author, formatNum(comment.Score))
+			contentLines = append(contentLines, commentText)
+			
+			// Wrap comment body
+			body := wrapText(comment.Body, m.windowWidth-6)
+			commentLines := strings.Split(body, "\n")
+			for _, line := range commentLines {
+				contentLines = append(contentLines, "  "+line)
+			}
+			
+			if i < len(m.comments)-1 {
+				contentLines = append(contentLines, "")
+			}
+		}
+	}
+	
+	// Apply scrolling
+	startLine := m.detailScrollY
+	endLine := startLine + height - 3
+	if endLine > len(contentLines) {
+		endLine = len(contentLines)
+	}
+	
+	// Calculate max scroll
+	m.detailMaxScroll = max(0, len(contentLines)-height+3)
+	
+	if startLine < len(contentLines) {
+		visibleLines := contentLines[startLine:endLine]
+		sb.WriteString(strings.Join(visibleLines, "\n"))
 	}
 	
 	return lipgloss.NewStyle().
