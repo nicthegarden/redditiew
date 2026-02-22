@@ -146,75 +146,140 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	if m.error != "" {
-		return errorStyle.Render("Error: " + m.error)
+		return errorStyle.Render("❌ Error: " + m.error)
 	}
 
 	if m.loading || len(m.posts) == 0 {
-		return "Loading posts from r/" + m.sub + "..."
+		return loadingStyle.Render("\n  ⏳ Loading posts from r/" + m.sub + "...\n")
 	}
 
 	var s string
-	s += titleStyle.Render("RedditView TUI") + "\n\n"
-	s += subtitleStyle.Render("r/"+m.sub) + "\n"
-	s += dividerStyle.Render("─────────────────────────────────────────────────────────────") + "\n\n"
+	
+	// Header
+	s += headerBg.Render("  🔥 RedditView TUI  ") + "\n"
+	s += subredditStyle.Render("  r/" + m.sub) + "\n"
+	s += dividerStyle.Render(getDivider(80)) + "\n\n"
 
+	// Posts
 	for i, post := range m.posts {
-		selected := " "
+		var postStr string
+		
 		if i == m.selected {
-			selected = "▶"
-		}
-
-		title := post.Title
-		if len(title) > 55 {
-			title = title[:52] + "..."
-		}
-
-		score := fmt.Sprintf("↑ %d", post.Score)
-		comments := fmt.Sprintf("💬 %d", post.Comments)
-
-		var style lipgloss.Style
-		if i == m.selected {
-			style = selectedStyle
+			// Selected post - highlighted
+			postStr += selectedIndicator + " "
+			postStr += selectedTitleStyle.Render(truncateTitle(post.Title, 70))
+			postStr += "\n"
+			postStr += selectedAuthorStyle.Render("     👤 u/" + post.Author)
+			postStr += selectedStatsStyle.Render(fmt.Sprintf("  ⬆ %d  💬 %d", post.Score, post.Comments))
+			postStr += "\n"
+			postStr += selectedBgStyle.Render("  " + postStr)
+			s += selectedBgStyle.Render(postStr + "\n")
 		} else {
-			style = normalStyle
+			// Normal post
+			postStr += "  " + normalIndicator + " "
+			postStr += normalTitleStyle.Render(truncateTitle(post.Title, 70))
+			postStr += "\n"
+			postStr += normalAuthorStyle.Render("     👤 u/" + post.Author)
+			postStr += normalStatsStyle.Render(fmt.Sprintf("  ⬆ %d  💬 %d", post.Score, post.Comments))
+			postStr += "\n"
+			s += postStr + "\n"
 		}
-
-		s += style.Render(fmt.Sprintf("%s %s\n", selected, title))
-		s += dimStyle.Render(fmt.Sprintf("  u/%s · %s · %s\n\n", post.Author, score, comments))
 	}
 
-	s += dividerStyle.Render("─────────────────────────────────────────────────────────────") + "\n"
-	s += helpStyle.Render("↑↓/jk: navigate · q: quit")
+	// Footer
+	s += dividerStyle.Render(getDivider(80)) + "\n"
+	s += footerStyle.Render("  ⬆⬇ navigate · j/k vim · q quit · ? help  ")
 
 	return s
 }
 
+func truncateTitle(title string, maxLen int) string {
+	if len(title) > maxLen {
+		return title[:maxLen-3] + "..."
+	}
+	return title
+}
+
+func getDivider(length int) string {
+	divider := ""
+	for i := 0; i < length; i++ {
+		divider += "─"
+	}
+	return divider
+}
+
 var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("205"))
+	// Constants
+	selectedIndicator = "❯"
+	normalIndicator   = "┃"
 
-	subtitleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("245"))
+	// Header styles
+	headerBg = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#FF4500")).
+		Padding(0, 1).
+		MarginBottom(1)
 
-	selectedStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("238")).
-			Padding(0, 1)
+	subredditStyle = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FF6B35")).
+		MarginBottom(1)
 
-	normalStyle = lipgloss.NewStyle()
+	// Title styles
+	selectedTitleStyle = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#FF6B35"))
 
-	dimStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("244"))
+	normalTitleStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Bold(true)
 
+	// Author and stats styles
+	selectedAuthorStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFD700")).
+		Background(lipgloss.Color("#FF6B35"))
+
+	selectedStatsStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#90EE90")).
+		Background(lipgloss.Color("#FF6B35"))
+
+	normalAuthorStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFD700"))
+
+	normalStatsStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#90EE90"))
+
+	// Background for selected post
+	selectedBgStyle = lipgloss.NewStyle().
+		Background(lipgloss.Color("#FF6B35")).
+		Padding(0, 0)
+
+	// Divider and utilities
 	dividerStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("244"))
+		Foreground(lipgloss.Color("#FF4500"))
 
-	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("244")).
-			Margin(1, 0, 0, 0)
+	// Footer
+	footerStyle = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#333333")).
+		MarginTop(1)
 
+	// Error style
 	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196"))
+		Bold(true).
+		Foreground(lipgloss.Color("#FFFFFF")).
+		Background(lipgloss.Color("#FF0000")).
+		Padding(1, 2)
+
+	// Loading style
+	loadingStyle = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#FFD700")).
+		Background(lipgloss.Color("#1a1a1a")).
+		Padding(1, 2)
 )
 
 func main() {
