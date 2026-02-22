@@ -136,6 +136,12 @@ cd C:\Users\YourUsername\Projects\redditiew-local
 ╚════════════════════════════════════════════════════════════════╝
 ```
 
+**Full Application View:**
+![RedditView TUI - Post List](TUI.png)
+
+**Comment Scrolling View:**
+![RedditView TUI - Comments](TUI-Comment.png)
+
 ---
 
 ## Linux QuickStart

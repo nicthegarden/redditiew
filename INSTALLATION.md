@@ -2,6 +2,21 @@
 
 Detailed technical installation instructions for RedditView.
 
+## 🖼️ Application Preview
+
+See what RedditView looks like once installed:
+
+**TUI Application - Post List View:**
+![RedditView TUI](TUI.png)
+
+**TUI Application - Comments View:**
+![RedditView Comments](TUI-Comment.png)
+
+**Web Interface:**
+![RedditView Web UI](WebUI.png)
+
+---
+
 ## Table of Contents
 - [Prerequisites](#prerequisites)
 - [Windows Installation](#windows-installation)
