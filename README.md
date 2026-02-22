@@ -87,6 +87,7 @@ npm start
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes (Windows & Linux)
 - **[INSTALLATION.md](INSTALLATION.md)** - Detailed installation and build instructions
+- **[SYSTEMD_SETUP.md](SYSTEMD_SETUP.md)** - Run as systemd service with auto-start
 - **[CONFIGURATION.md](CONFIGURATION.md)** - Configure the application to your preferences
 - **[TUI_KEYBINDINGS.md](TUI_KEYBINDINGS.md)** - Complete keyboard shortcut reference
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture and design decisions

@@ -24,6 +24,7 @@ See what RedditView looks like once installed:
 - [macOS Installation](#macos-installation)
 - [Docker Installation](#docker-installation)
 - [Building from Source](#building-from-source)
+- [Systemd Service Setup](#systemd-service-setup)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -493,6 +494,29 @@ curl http://localhost:3002/api/r/sysadmin.json | jq '. | keys' | head -10
 # If it loads and shows posts, installation is successful!
 # Press 'q' to exit
 ```
+
+---
+
+## Systemd Service Setup
+
+For production deployments and automatic startup on boot, RedditView can be installed as a systemd service.
+
+**See [SYSTEMD_SETUP.md](SYSTEMD_SETUP.md) for complete systemd integration guide:**
+
+- Run as user-level systemd service
+- Automatic startup on system boot
+- Three deployment modes (API+TUI, API-only, Web-only)
+- Auto-restart on crashes with retry logic
+- Centralized logging via journalctl
+- Easy service management with systemctl
+
+**Quick setup:**
+```bash
+cd /path/to/redditiew-local
+./setup.sh --mode both --enable --start
+```
+
+This will install, enable, and start RedditView as systemd services in one command.
 
 ---
 

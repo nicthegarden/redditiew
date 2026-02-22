@@ -31,6 +31,13 @@ Welcome to RedditView documentation! This comprehensive guide covers everything 
   - Troubleshooting common issues
   - Build from source
 
+- **[SYSTEMD_SETUP.md](SYSTEMD_SETUP.md)** - Systemd service management
+  - Auto-start on boot with systemd
+  - Multiple deployment modes (API+TUI, API-only, Web-only)
+  - Service installation with setup.sh
+  - tmux integration for persistent TUI sessions
+  - Service logs and monitoring
+
 ### 2. Configuration & Customization
 - **[CONFIGURATION.md](CONFIGURATION.md)** - Customize your setup
   - Configuration file reference
@@ -114,6 +121,9 @@ Shows the web interface with:
 **...install and run it quickly**
 → [QUICKSTART.md](QUICKSTART.md)
 
+**...run it as a systemd service with auto-start on boot**
+→ [SYSTEMD_SETUP.md](SYSTEMD_SETUP.md)
+
 **...understand all keyboard shortcuts**
 → [TUI_KEYBINDINGS.md](TUI_KEYBINDINGS.md)
 
@@ -146,6 +156,7 @@ Shows the web interface with:
 | [CONFIGURATION.md](CONFIGURATION.md) | Config reference | 15 min read | Intermediate |
 | [TUI_KEYBINDINGS.md](TUI_KEYBINDINGS.md) | Keyboard shortcuts | 10 min read | Beginner |
 | [INSTALLATION.md](INSTALLATION.md) | Technical setup | 20 min read | Advanced |
+| [SYSTEMD_SETUP.md](SYSTEMD_SETUP.md) | Service management | 15 min read | Intermediate |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Technical design | 15 min read | Advanced |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Contributing guide | 10 min read | Advanced |
 
