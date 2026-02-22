@@ -89,6 +89,7 @@ export default function CommentsList({ permalink }: CommentsListProps) {
       .then(async (res) => {
         clearTimeout(timeoutId)
         if (!res.ok) {
+          console.error(`Proxy returned HTTP ${res.status}:`, res.statusText)
           throw new Error(`HTTP ${res.status}: ${res.statusText}`)
         }
         return res.json()
@@ -102,10 +103,12 @@ export default function CommentsList({ permalink }: CommentsListProps) {
       .catch((err) => {
         if (err.name === 'AbortError') {
           setError('Request timeout - comments took too long to load')
-        } else if (err instanceof TypeError && err.message.includes('fetch')) {
+        } else if (err instanceof TypeError) {
           setError('Network error - check if proxy is running on port 3001')
+        } else if (err instanceof Error) {
+          setError(err.message)
         } else {
-          setError(err.message || 'Failed to load comments')
+          setError('Unknown error loading comments')
         }
         console.error('Comments fetch error:', err)
       })
