@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -194,10 +195,16 @@ func (p PostItem) Description() string {
 
 type APIClient struct {
 	baseURL string
+	client  *http.Client
 }
 
 func NewAPIClient() *APIClient {
-	return &APIClient{baseURL: appConfig.API.BaseURL}
+	return &APIClient{
+		baseURL: appConfig.API.BaseURL,
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+	}
 }
 
 func (c *APIClient) FetchPosts(subreddit, sort string) ([]RedditPostData, error) {
@@ -206,7 +213,7 @@ func (c *APIClient) FetchPosts(subreddit, sort string) ([]RedditPostData, error)
 	if sort == "" || sort == "popular" {
 		sort = "hot"
 	}
-	resp, err := http.Get(fmt.Sprintf("%s/r/%s/%s.json?limit=%d", c.baseURL, subreddit, sort, appConfig.TUI.PostsPerPage))
+	resp, err := c.client.Get(fmt.Sprintf("%s/r/%s/%s.json?limit=%d", c.baseURL, subreddit, sort, appConfig.TUI.PostsPerPage))
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +247,7 @@ func (c *APIClient) SearchPosts(query string) ([]RedditPostData, error) {
 		url.QueryEscape(query),
 		appConfig.TUI.PostsPerPage)
 
-	resp, err := http.Get(searchURL)
+	resp, err := c.client.Get(searchURL)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +274,7 @@ func (c *APIClient) SearchPosts(query string) ([]RedditPostData, error) {
 func (c *APIClient) FetchComments(subreddit, postID string) ([]*Comment, error) {
 	commentsURL := fmt.Sprintf("%s/r/%s/comments/%s/", c.baseURL, subreddit, postID)
 
-	resp, err := http.Get(commentsURL)
+	resp, err := c.client.Get(commentsURL)
 	if err != nil {
 		return nil, err
 	}
