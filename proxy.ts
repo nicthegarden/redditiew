@@ -39,8 +39,23 @@ function getRetryState(key: string): RetryState {
 }
 
 const server = http.createServer((req, res) => {
+  // CORS headers for all responses
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '3600'
+  }
+
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200, corsHeaders)
+    res.end()
+    return
+  }
+
   if (!req.url) {
-    res.writeHead(400, { 'Content-Type': 'application/json' })
+    res.writeHead(400, { 'Content-Type': 'application/json', ...corsHeaders })
     res.end(JSON.stringify({ error: 'Bad request' }))
     return
   }
@@ -50,8 +65,9 @@ const server = http.createServer((req, res) => {
   
   if (cached && !req.url.includes('/search.json')) {
     res.writeHead(200, {
-      'Access-Control-Allow-Origin': '*',
-      'X-Cache': 'HIT'
+      'Content-Type': 'application/json',
+      'X-Cache': 'HIT',
+      ...corsHeaders
     })
     res.end(cached)
     return
@@ -107,14 +123,14 @@ const server = http.createServer((req, res) => {
             redirectRes.on('data', chunk => redirectData += chunk)
             redirectRes.on('end', () => {
               res.writeHead(200, {
-                'Content-Type': redirectRes.headers['content-type'] || 'text/html',
-                'Access-Control-Allow-Origin': '*'
+                'Content-Type': redirectRes.headers['content-type'] || 'application/json',
+                ...corsHeaders
               })
               res.end(redirectData)
             })
           })
           redirectReq.on('error', () => {
-            res.writeHead(500)
+            res.writeHead(500, corsHeaders)
             res.end('Redirect error')
           })
           redirectReq.setTimeout(10000)
@@ -137,8 +153,8 @@ const server = http.createServer((req, res) => {
             console.log(`Rate limited after ${MAX_RETRIES} retries`)
             res.writeHead(429, {
               'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
-              'Retry-After': '60'
+              'Retry-After': '60',
+              ...corsHeaders
             })
             res.end(JSON.stringify({ 
               error: 'Rate limited by Reddit',
@@ -163,8 +179,9 @@ const server = http.createServer((req, res) => {
         
         res.writeHead(proxyRes.statusCode || 500, {
           ...headers,
-          'Access-Control-Allow-Origin': '*',
-          'X-Cache': 'MISS'
+          'Content-Type': 'application/json',
+          'X-Cache': 'MISS',
+          ...corsHeaders
         })
         res.end(data)
       })
@@ -175,7 +192,7 @@ const server = http.createServer((req, res) => {
       retryStates.delete(cacheKey)
       res.writeHead(502, {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        ...corsHeaders
       })
       res.end(JSON.stringify({
         error: 'Proxy error',
@@ -188,7 +205,7 @@ const server = http.createServer((req, res) => {
       console.error(`Request timeout: ${target}`)
       res.writeHead(504, {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        ...corsHeaders
       })
       res.end(JSON.stringify({
         error: 'Gateway timeout',
