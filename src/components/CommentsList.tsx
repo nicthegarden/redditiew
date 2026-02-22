@@ -81,8 +81,18 @@ export default function CommentsList({ permalink }: CommentsListProps) {
     setError(null)
     setComments([])
 
-    fetch(`http://localhost:3001/api${permalink}.json`)
-      .then((res) => res.json())
+    // Fetch comments with better error handling
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 15000) // 15s timeout
+
+    fetch(`http://localhost:3001/api${permalink}.json`, { signal: controller.signal })
+      .then(async (res) => {
+        clearTimeout(timeoutId)
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+        }
+        return res.json()
+      })
       .then((data) => {
         if (Array.isArray(data) && data.length > 1) {
           const commentsList = parseComments(data[1])
@@ -90,15 +100,27 @@ export default function CommentsList({ permalink }: CommentsListProps) {
         }
       })
       .catch((err) => {
-        setError(err.message)
+        if (err.name === 'AbortError') {
+          setError('Request timeout - comments took too long to load')
+        } else if (err instanceof TypeError && err.message.includes('fetch')) {
+          setError('Network error - check if proxy is running on port 3001')
+        } else {
+          setError(err.message || 'Failed to load comments')
+        }
+        console.error('Comments fetch error:', err)
       })
       .finally(() => {
         setLoading(false)
       })
+
+    return () => {
+      clearTimeout(timeoutId)
+      controller.abort()
+    }
   }, [permalink])
 
   if (loading) return <div className="comments-loading">Loading comments...</div>
-  if (error) return <div className="comments-error">Error: {error}</div>
+  if (error) return <div className="comments-error">⚠️ {error}</div>
   if (comments.length === 0) return <div className="comments-empty">No comments yet</div>
 
   return (
