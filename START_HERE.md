@@ -45,7 +45,7 @@ Then open: http://localhost:5173
 ```bash
 ./launch.sh tui
 ```
-Modern, multi-screen TUI with full feature parity to web. Navigate posts, search, switch subreddits, view details and comments. Use j/k or arrows to navigate, `/` to search, `s` to switch subreddit, `q` to quit.
+Modern 3-pane email client-style TUI with all features (v3.0.0). Left pane: browse posts. Middle pane: read details. Right pane: see comments. All visible at once! Tab to switch panes, j/k or arrows to navigate, `/` to search, `s` to switch subreddit, `q` to quit.
 
 **Both Web + TUI (Full Stack):**
 ```bash
