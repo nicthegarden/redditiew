@@ -9,10 +9,24 @@
 import http from 'http'
 import url from 'url'
 import https from 'https'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const cache = new Map()
 const CACHE_TTL = 60000 // 1 minute
 const API_PORT = 3002
+
+// Load config once at startup
+let appConfig = {}
+try {
+  const configPath = path.join(__dirname, 'config.json')
+  const configData = fs.readFileSync(configPath, 'utf8')
+  appConfig = JSON.parse(configData)
+} catch (err) {
+  console.warn('Warning: Could not load config.json', err.message)
+}
 
 function getCache(key) {
   const entry = cache.get(key)
@@ -130,15 +144,17 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
-    // Parse subreddit from /api/r/:subreddit or /api/r/:subreddit.json
-    const subredditMatch = pathname.match(/^\/api\/r\/([^/.]+)(\.json)?(?:\/|$)/)
-    if (subredditMatch) {
-      const subreddit = subredditMatch[1]
-      const limit = parsedUrl.query.limit || '50'
-      const after = parsedUrl.query.after ? `&after=${parsedUrl.query.after}` : ''
-      
-      const redditUrl = `https://www.reddit.com/r/${subreddit}.json?limit=${limit}${after}`
-      const cacheKey = redditUrl
+     // Parse subreddit from /api/r/:subreddit or /api/r/:subreddit.json or /api/r/:subreddit/:sort.json
+     // Matches: /api/r/sysadmin, /api/r/sysadmin.json, /api/r/sysadmin/hot, /api/r/sysadmin/hot.json
+     const subredditMatch = pathname.match(/^\/api\/r\/([^/.]+)(?:\/([a-z]+))?(?:\.json)?(?:\/|$)/)
+     if (subredditMatch) {
+       const subreddit = subredditMatch[1]
+       const sort = subredditMatch[2] || 'hot' // Default to 'hot' if not specified
+       const limit = parsedUrl.query.limit || '50'
+       const after = parsedUrl.query.after ? `&after=${parsedUrl.query.after}` : ''
+       
+       const redditUrl = `https://www.reddit.com/r/${subreddit}/${sort}.json?limit=${limit}${after}`
+       const cacheKey = redditUrl
       
       // Check cache
       const cached = getCache(cacheKey)
@@ -202,6 +218,20 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
+    // Config endpoint
+    if (pathname === '/api/config') {
+      // Return only the parts of config relevant for clients
+      const clientConfig = {
+        web: appConfig.web || {},
+        tui: {
+          subreddit_shortcuts: appConfig.tui?.subreddit_shortcuts || {},
+          default_sort: appConfig.tui?.default_sort || 'popular'
+        }
+      }
+      sendJson(res, clientConfig)
+      return
+    }
+
     sendError(res, 'Not found', 404)
   } catch (err) {
     console.error('Error:', err)
@@ -223,17 +253,19 @@ server.on('error', (err) => {
 
 server.listen(API_PORT, () => {
   console.log(`
-╭─────────────────────────────────────╮
-│  RedditView API Server              │
-│  http://localhost:${API_PORT}           │
-├─────────────────────────────────────┤
-│  Endpoints:                         │
-│  GET /api/r/:subreddit              │
-│  GET /api/r/:subreddit/comments/:id │
-│  GET /api/search.json?q=:query      │
-│  GET /health                        │
-│  GET /api/stats                     │
-╰─────────────────────────────────────╯
+╭──────────────────────────────────────────────────╮
+│  RedditView API Server                           │
+│  http://localhost:${API_PORT}                         │
+├──────────────────────────────────────────────────┤
+│  Endpoints:                                      │
+│  GET /api/r/:subreddit                           │
+│  GET /api/r/:subreddit/:sort (hot/new/top...)    │
+│  GET /api/r/:subreddit/comments/:id              │
+│  GET /api/search.json?q=:query                   │
+│  GET /api/config                                 │
+│  GET /health                                     │
+│  GET /api/stats                                  │
+╰──────────────────────────────────────────────────╯
   `)
 })
 
