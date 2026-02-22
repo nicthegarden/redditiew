@@ -45,7 +45,7 @@ Then open: http://localhost:5173
 ```bash
 ./launch.sh tui
 ```
-Modern 3-pane email client-style TUI with all features (v3.0.0). Left pane: browse posts. Middle pane: read details. Right pane: see comments. All visible at once! Tab to switch panes, j/k or arrows to navigate, `/` to search, `s` to switch subreddit, `q` to quit.
+Fast, simple terminal UI for Reddit browsing (v4.0.0). Single-pane design with post list and expanded details. Full keyboard control: j/k to navigate, Ctrl+F to search, Ctrl+R to change subreddit, F5 to refresh, q to quit.
 
 **Both Web + TUI (Full Stack):**
 ```bash

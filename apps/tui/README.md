@@ -1,7 +1,7 @@
-# RedditView TUI v3 - Email Client-Style 3-Pane Terminal UI
+# RedditView TUI v4 - Simplified Single-Pane Design
 
-> A feature-rich, modern terminal user interface for browsing Reddit built with Go and Bubble Tea
-> Inspired by Mutt/Thunderbird email client design patterns
+> A fast, reliable terminal UI for browsing Reddit with enhanced keyboard shortcuts
+> All information in one view: posts list with expanded post details and comments below
 
 ## 🚀 Quick Start
 
@@ -13,255 +13,238 @@ npm install && npm run build
 ./launch.sh tui
 ```
 
-That's it! The TUI will automatically start the API server and launch the application.
-
 ## ✨ Features
 
-### Complete Feature Parity with Web App
+### Post Browsing
 - ✅ Browse posts from any subreddit
-- ✅ Real-time search and filtering
+- ✅ View full post details in expanded view
+- ✅ See post metadata: author, score, comment count
+- ✅ Display post content (selftext or link)
+- ✅ Comment thread placeholder (ready for implementation)
+
+### Search & Navigation
+- ✅ Real-time search by post title and author
 - ✅ Switch subreddits without restarting
-- ✅ View full post details
-- ✅ Display comments
-- ✅ Professional UI with Reddit-inspired colors
-- ✅ Responsive terminal layout
-- ✅ Comprehensive error handling
+- ✅ Smooth keyboard navigation (j/k or arrows)
+- ✅ Jump to first/last post (Home/End)
+- ✅ Auto-refresh with F5
 
-### Advanced Navigation
-- **Email client-style 3-pane simultaneous display** (left: posts, middle: details, right: comments)
-- Tab to cycle between panes, arrow keys to navigate within pane
-- Vim-style keyboard shortcuts (j/k)
-- Focus indicator showing which pane is active
-- All content visible at once - no screen switching
-
-### Professional Design
-- Reddit-inspired color scheme
-- Clean, organized layout
-- Text wrapping for readability
-- Loading animations
-- Error messages with recovery options
+### Design
+- ✅ Clean, single-pane layout (all info visible)
+- ✅ Reddit-inspired color scheme
+- ✅ Professional typography and spacing
+- ✅ Responsive to terminal size
+- ✅ Responsive loading states
 
 ## ⌨️ Keyboard Shortcuts
 
+### Navigation
 | Key | Action |
 |-----|--------|
-| `Tab` | Cycle focus between panes |
-| `j` / `k` | Navigate within active pane (down/up) |
-| `↓` / `↑` | Navigate within active pane (down/up) |
-| `/` | Search posts (in left pane) |
-| `s` | Switch subreddit |
-| `c` | Collapse/expand comment thread (right pane) |
-| `q` / `Ctrl+C` | Quit |
+| `↓` / `j` | Navigate down to next post |
+| `↑` / `k` | Navigate up to previous post |
+| `Home` | Jump to first post |
+| `End` | Jump to last post |
+
+### Search & Filtering
+| Key | Action |
+|-----|--------|
+| `Ctrl+F` | Start search (filter by title/author) |
+| `Esc` | Cancel search |
+| `Enter` | Apply search |
+
+### Subreddit Control
+| Key | Action |
+|-----|--------|
+| `Ctrl+R` | Edit subreddit name |
+| `Esc` | Cancel subreddit edit |
+| `Enter` | Load new subreddit |
+
+### Refresh & Exit
+| Key | Action |
+|-----|--------|
+| `F5` | Refresh current subreddit |
+| `q` | Quit application |
+| `Ctrl+C` | Quit application |
 
 ## 📖 Layout
 
-### 3-Pane Email Client Design
-
 ```
-🔥 r/golang  50 posts
-Tab: focus | j/k: navigate | /: search | s: subreddit | q: quit
+🔥 r/golang  Posts: 50
+▼/▲ (j/k): navigate  Ctrl+F: search  Ctrl+R: subreddit  F5: refresh  q: quit
 
-┌─────────────────┬──────────────────────┬─────────────────┐
-│ 📬 Posts        │ 📄 Details           │ 💬 Comments     │
-│ (focused)       │ (scrollable)         │ (scrollable)    │
-├─────────────────┼──────────────────────┼─────────────────┤
-│ How to write    │ How to write         │ u/alice ⬆542    │
-│ efficient Go    │ efficient Go code    │ Great post!...  │
-│ u/john ⬆3.2K   │                      │                 │
-│                 │ u/john_dev           │   u/bob ⬆89     │
-│ Memory mgmt     │ r/golang ⬆3.2K 💬156 │   Exactly what  │
-│ u/alice ⬆2.8K  │                      │   I needed...   │
-│                 │ This comprehensive   │                 │
-│ Concurrency     │ guide covers memory  │ u/charlie ⬆234  │
-│ patterns        │ management...        │ Thanks for...   │
-│ u/bob ⬆2.4K    │                      │                 │
-└─────────────────┴──────────────────────┴─────────────────┘
+▼ How to write efficient Go code
+👤 u/john_dev  •  r/golang  •  ⬆ 3.2K  •  💬 156
+────────────────────────────────────────────────────────
+This comprehensive guide covers memory management, concurrency
+patterns, and optimization techniques for Go applications.
 
-Tab: focus | j/k: navigate | /: search | s: subreddit | q: quit
+It demonstrates best practices for writing fast, efficient code...
+
+────────────────────────────────────────────────────────
+💬 Top Comments
+(Comments loading would go here)
+
+  ▶ Memory management best practices
+    u/alice_rust  •  ⬆ 2.8K  •  💬 203
+
+  ▶ Concurrency patterns in Go
+    u/bob_gopher  •  ⬆ 2.4K  •  💬 89
+
+Post 1/50  •  Ctrl+F: search  •  Ctrl+R: subreddit  •  F5: refresh  •  q: quit
 ```
-
-**Left Pane (Posts)**
-- Scrollable list of posts with titles
-- Author, score, and comment count for each
-- Currently selected post highlighted
-- All posts visible simultaneously
-
-**Middle Pane (Details)**
-- Full post title and metadata
-- Complete post content with text wrapping
-- URL if external link
-- Scrollable for long content
-
-**Right Pane (Comments)**
-- Hierarchical comment tree
-- Indentation shows reply depth
-- Author, score for each comment
-- Collapsible threads with `c` key
-- Scrollable for many comments
 
 ## 🏗️ Architecture
 
-Email client-inspired 3-pane design with simultaneous rendering:
+### Single-Pane Design
+- **All content in one view**: No screen switching
+- **Post list with expanded detail**: Selected post shows full content
+- **Efficient scrolling**: Scroll through all posts and details
+- **Comments section**: Ready for comment tree display below posts
 
+### Keyboard-First Navigation
+- **Vim-style shortcuts**: j/k for navigation
+- **Ctrl+ shortcuts**: Standard shortcuts (Ctrl+F for search, Ctrl+R for edit)
+- **Function keys**: F5 for refresh
+- **Mnemonic names**: Easy to remember (F5 = refresh, Ctrl+F = find, Ctrl+R = reddit)
+
+### Data Flow
 ```
-State Management (Model)
-    ├── Posts List (left pane)
-    │   └── Selected post index
-    ├── Post Details (middle pane) 
-    │   └── Scroll position
-    └── Comments (right pane)
-        └── Scroll position & collapse state
-
-Keyboard Input Routes to Focused Pane
-    ├── PanePostList → Navigate post list
-    ├── PanePostDetail → Scroll content
-    └── PaneComments → Scroll comments / collapse threads
-
-View Renders All 3 Panes Side-by-Side
-    └── JoinHorizontal with border focus indicators
+API Server (port 3002)
+    ↓
+Fetch Posts (50 limit)
+    ↓
+Filter/Search Results
+    ↓
+Render List + Selected Post Detail
+    ↓
+Display to Terminal
 ```
-
-### Key Differences from v2
-- **v2**: Multi-screen navigation (sequential)
-- **v3**: All content simultaneous (Mutt/Thunderbird style)
-- **v2**: Focus on single content area
-- **v3**: Focus tracking between panes with Tab
-
-### Components
-- **Post List Pane**: Manual rendering for width control
-- **Detail Pane**: Post content with text wrapping
-- **Comments Pane**: Recursive tree rendering with indentation
-- **Styling**: Focused border in orange, unfocused in gray
-
-## 📊 Comparison with Previous Versions
-
-| Aspect | v1 (Split) | v2 (Multi-Screen) | v3 (3-Pane Email) |
-|--------|-----------|------------------|-------------------|
-| Lines of code | 530 | 668 | 848 |
-| Layout | 2 panes | 4 screens sequential | 3 panes simultaneous |
-| Navigation | Screen switching | Screen switching | Tab between panes |
-| Comments visible | Next screen | Next screen | Always visible |
-| Design pattern | Split-view | Elm Multi-screen | Email client (Mutt) |
-| Pane focus | N/A | N/A | Tab cycling with border |
 
 ## 🛠️ Technical Details
 
 ### Built With
 - **Language**: Go 1.16+
 - **Framework**: Bubble Tea (TUI framework)
-- **Components**: Bubbles (list, textinput, spinner)
 - **Styling**: Lipgloss
-- **API**: Custom Node.js API server
+- **API**: Node.js on port 3002
 
 ### Dependencies
 ```
 github.com/charmbracelet/bubbletea  v1.3.10
 github.com/charmbracelet/lipgloss   v0.16.0
-github.com/charmbracelet/bubbles    latest
 ```
 
 ### Performance
 - 50 posts load in < 1 second
 - 60fps rendering with Bubble Tea
-- Responsive to input (< 100ms latency)
+- Responsive to keyboard input (< 100ms)
 - Memory-efficient filtering
 
-## 🚦 Getting Started
+## 🚦 Installation
 
 ### Prerequisites
 - Go 1.16+
 - Node.js 16+
 - Terminal with 256-color support
 
-### Installation
+### Build
 ```bash
-# Clone or navigate to project
 cd redditiew-local
-
-# Install dependencies
-npm install
-go mod tidy
-
-# Build
-npm run build
+npm install && npm run build
 cd apps/tui && go build -o redditview main.go
 ```
 
-### Running
-
-**Option 1: Using launch script (recommended)**
+### Run
 ```bash
+# Using launch script (recommended)
 ./launch.sh tui
-```
 
-**Option 2: Manual startup**
-```bash
-# Terminal 1: API server
+# Manual - Terminal 1 (API server)
 node api-server.js
 
-# Terminal 2: TUI
+# Manual - Terminal 2 (TUI)
 ./apps/tui/redditview
 ```
 
-## 📚 Documentation
+## 🎯 Usage Examples
 
-For detailed documentation, see:
-- **[TUI_REDESIGN.md](../TUI_REDESIGN.md)** - Complete feature documentation
-- **[RUN_APP.md](../RUN_APP.md)** - Launch instructions
-- **[START_HERE.md](../START_HERE.md)** - Quick start guide
+### Browse r/golang
+```bash
+./launch.sh tui
+# Then navigate with j/k keys
+```
+
+### Search posts by title
+```bash
+# Press Ctrl+F
+# Type "concurrency"
+# Press Enter
+```
+
+### Switch to r/rust
+```bash
+# Press Ctrl+R
+# Type "rust"
+# Press Enter
+```
+
+### Refresh posts
+```bash
+# Press F5
+```
+
+### View specific post
+```bash
+# Press ↓/j to navigate
+# Press Enter (or just navigate to it)
+# Post automatically expands to show full details
+```
 
 ## 🐛 Troubleshooting
 
-### "Connection refused" error
-API server not running. Make sure it starts with `./launch.sh tui`
+### API connection error
+- Ensure API server is running: `node api-server.js`
+- Check port 3002 is available
 
 ### Posts not loading
-- Check internet connection
-- Verify API server running on port 3002
-- Try different subreddit name
+- Verify internet connection
+- Check subreddit name is correct
+- Try F5 to refresh
 
-### Display glitches
+### Display issues
 - Expand terminal window
-- Ensure terminal supports 256 colors
-- Try: `export COLORTERM=truecolor`
+- Ensure 256-color support: `echo $COLORTERM`
 
-## 🎯 Future Enhancements
+## 🎨 Color Scheme
 
-- [ ] Comment tree collapse/expand toggling
-- [ ] Pane width adjustment with arrow keys
-- [ ] Smooth scrolling within panes
-- [ ] Mark/unmark posts (visual indicator)
-- [ ] Thread count in post titles
-- [ ] Post sorting options (top, new, hot)
-- [ ] Local post caching
-- [ ] Voting/commenting (with auth)
-- [ ] Subreddit favorites
-- [ ] Custom color themes
-- [ ] Settings UI
-- [ ] Export functionality
+| Element | Color | Hex |
+|---------|-------|-----|
+| Header | Orange | #FF4500 |
+| Selected | Dark Orange | #FF6B35 |
+| Meta/Author | Gold | #FFD700 |
+| Links | Sky Blue | #87CEEB |
+| Content | Light Gray | #CCCCCC |
+| Footer | Dark Gray | #333333 |
+
+## 🔄 Future Enhancements
+
+- [ ] Comment tree parsing and display
+- [ ] Post sorting (hot, new, top)
+- [ ] Voting (with authentication)
+- [ ] Post marking/favoriting
+- [ ] Post export/copy
+- [ ] Local caching
+- [ ] Settings menu
+- [ ] Custom themes
 
 ## 📝 License
 
 MIT - See LICENSE file
 
-## 🤝 Contributing
-
-Issues and PRs welcome! Please ensure:
-- Code is properly formatted (`go fmt`)
-- No unused imports
-- Clear commit messages
-- Comments for complex logic
-
-## 📞 Support
-
-For issues or questions:
-1. Check [TUI_REDESIGN.md](../TUI_REDESIGN.md) troubleshooting section
-2. Review GitHub issues
-3. Check Bubble Tea documentation
-
 ---
 
-**Version**: 3.0.0  
+**Version**: 4.0.0  
 **Status**: Production Ready  
-**Design**: Email Client-Style 3-Pane (Mutt/Thunderbird inspired)  
+**Design**: Single-Pane List with Expanded Details  
 **Last Updated**: February 22, 2026
