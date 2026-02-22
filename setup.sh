@@ -4,10 +4,16 @@
 # RedditView Systemd Setup Script
 # 
 # This script helps users install and manage RedditView as a systemd service.
-# It supports multiple deployment modes:
-# - API Server Only (web-only)
-# - API Server + TUI (with tmux)
-# - Full Installation with systemd service management
+# It supports both user-level and system-level (root) installations.
+#
+# Supported modes:
+# - user-level: ~/.config/systemd/user/ (no root required)
+# - system-level: /etc/systemd/system/ (requires root/sudo)
+#
+# Service modes:
+# - both: API Server + TUI (with tmux)
+# - api-only: API Server only
+# - web-only: Web interface only
 #
 # Usage: ./setup.sh [OPTIONS]
 #        ./setup.sh --help
@@ -25,7 +31,7 @@ NC='\033[0m' # No Color
 
 # Default values
 INSTALL_MODE="both"          # both, api-only, web-only
-SERVICE_MANAGER="systemd"    # systemd, manual
+SERVICE_MODE="user"          # user (user-level), system (system-level)
 INSTALL_PATH=""
 USERNAME=$(whoami)
 ENABLE_SERVICE=false
@@ -85,59 +91,86 @@ ${BLUE}OPTIONS:${NC}
     -p, --path PATH              Installation path (where redditiew is installed)
                                  Default: current directory
     
+    -s, --scope SCOPE            Installation scope: user, system
+                                 user = ~/.config/systemd/user/ (no root needed)
+                                 system = /etc/systemd/system/ (requires root/sudo)
+                                 Default: user
+    
     -u, --user USERNAME          System user to run service as
                                  Default: current user
+                                 Note: for system scope, choose appropriate user
     
     -e, --enable                 Enable service to start on boot
     
-    -s, --start                  Start service immediately after installation
+    -x, --start                  Start service immediately after installation
     
     -v, --verbose                Enable verbose output
     
     -h, --help                   Show this help message
 
-${BLUE}MODES:${NC}
+${BLUE}SERVICE MODES:${NC}
     both                         Install both API server and TUI (requires tmux)
     api-only                     Install only API server
     web-only                     Install only web interface
+
+${BLUE}INSTALLATION SCOPES:${NC}
+    user                         User-level services in ~/.config/systemd/user/
+                                 - No root/sudo required
+                                 - Services run as current user
+                                 - Only runs when user is logged in
+                                 - Perfect for: development, desktops, personal use
+    
+    system                       System-level services in /etc/systemd/system/
+                                 - Requires root/sudo
+                                 - Services run as specified user
+                                 - Always available (even without login)
+                                 - Perfect for: servers, production, always-on
 
 ${BLUE}EXAMPLES:${NC}
     # Interactive setup (guided)
     ./setup.sh
 
-    # Setup with custom path and enable on boot
-    ./setup.sh --path /opt/redditiew --enable
+    # User-level setup with custom path, enable and start
+    ./setup.sh --scope user --path /opt/redditiew --enable --start
 
-    # Setup API only, start immediately, enable on boot
-    ./setup.sh --mode api-only --start --enable
+    # System-level setup (requires sudo)
+    sudo ./setup.sh --scope system --path /opt/redditiew --user redditview --enable
 
-    # Setup with verbose output
+    # API-only system service
+    sudo ./setup.sh --scope system --mode api-only --user redditview --enable
+
+    # Verbose output for debugging
     ./setup.sh --verbose
 
 ${BLUE}REQUIREMENTS:${NC}
     - systemd (Linux with systemd support)
     - tmux (for API + TUI mode)
-    - sudo/root access (to install systemd services)
     - Node.js and Go (for running the application)
+    - sudo (for system-level installation)
 
 ${BLUE}FILES CREATED:${NC}
-    ~/.config/systemd/user/redditview-api.service
-    ~/.config/systemd/user/redditview-tui.service  (if using both/tui mode)
-    ~/.config/systemd/user/redditview-web.service  (if using web-only mode)
+    User scope:
+        ~/.config/systemd/user/redditview-api.service
+        ~/.config/systemd/user/redditview-tui.service  (if applicable)
+
+    System scope:
+        /etc/systemd/system/redditview-api.service
+        /etc/systemd/system/redditview-tui.service  (if applicable)
 
 ${BLUE}COMMANDS AFTER INSTALLATION:${NC}
-    # Check service status
-    systemctl --user status redditview-api
+    User scope:
+        # Check service status
+        systemctl --user status redditview-api
 
-    # Start/stop services
-    systemctl --user start redditview-api
-    systemctl --user stop redditview-api
+        # View logs
+        journalctl --user -u redditview-api -f
 
-    # View logs
-    journalctl --user -u redditview-api -f
+    System scope:
+        # Check service status
+        sudo systemctl status redditview-api
 
-    # Access TUI session (if installed)
-    tmux attach-session -t redditview
+        # View logs
+        sudo journalctl -u redditview-api -f
 
 EOF
 }
@@ -159,7 +192,7 @@ check_dependencies() {
     fi
     
     # Check tmux (only needed for TUI mode)
-    if [ "$INSTALL_MODE" = "both" ] || [ "$INSTALL_MODE" = "tui" ]; then
+    if [ "$INSTALL_MODE" = "both" ]; then
         if ! command -v tmux &> /dev/null; then
             missing+=("tmux")
         else
@@ -196,6 +229,14 @@ check_dependencies() {
         print_success "git is installed"
     fi
     
+    # For system scope, check if running as root
+    if [ "$SERVICE_MODE" = "system" ] && [ "$EUID" -ne 0 ]; then
+        print_error "System-level installation requires root/sudo"
+        print_info "Please run with sudo:"
+        echo "    sudo ./setup.sh --scope system [other options]"
+        return 1
+    fi
+    
     if [ ${#missing[@]} -gt 0 ]; then
         print_error "Missing dependencies: ${missing[*]}"
         echo ""
@@ -226,7 +267,7 @@ configure_install_path() {
         echo "Is this the correct RedditView installation directory? (y/n)"
         read -r response
         if [ "$response" != "y" ]; then
-            print_error "Please specify correct path using -p option"
+            print_error "Please specify correct path using --path option"
             return 1
         fi
     else
@@ -237,38 +278,101 @@ configure_install_path() {
     return 0
 }
 
-configure_user() {
-    print_section "Configuration: System User"
+configure_scope() {
+    print_section "Configuration: Installation Scope"
     
-    if ! id "$USERNAME" &>/dev/null; then
-        print_error "User '$USERNAME' does not exist"
-        echo "Create this user? (y/n)"
-        read -r response
-        if [ "$response" = "y" ]; then
-            if sudo useradd -m -s /bin/bash "$USERNAME"; then
-                print_success "Created user '$USERNAME'"
-            else
-                print_error "Failed to create user"
+    if [ -z "$SERVICE_MODE" ]; then
+        echo "Select installation scope:"
+        echo "  1) user   - User-level (no root required, ~/.config/systemd/user/)"
+        echo "  2) system - System-level (requires root, /etc/systemd/system/)"
+        read -p "Enter choice (1-2) [1]: " choice
+        choice=${choice:-1}
+        
+        case $choice in
+            1) SERVICE_MODE="user" ;;
+            2) SERVICE_MODE="system" ;;
+            *) print_error "Invalid choice"; return 1 ;;
+        esac
+    fi
+    
+    case $SERVICE_MODE in
+        user)
+            print_success "Scope: User-level (no root required)"
+            SERVICE_DIR="$HOME/.config/systemd/user"
+            SYSTEMCTL_SCOPE="--user"
+            ;;
+        system)
+            if [ "$EUID" -ne 0 ]; then
+                print_error "System-level installation requires root/sudo"
                 return 1
             fi
-        else
+            print_success "Scope: System-level (system-wide)"
+            SERVICE_DIR="/etc/systemd/system"
+            SYSTEMCTL_SCOPE=""
+            ;;
+        *)
+            print_error "Invalid scope: $SERVICE_MODE"
             return 1
+            ;;
+    esac
+    
+    log_verbose "Service scope: $SERVICE_MODE"
+    log_verbose "Service directory: $SERVICE_DIR"
+    
+    return 0
+}
+
+configure_user() {
+    print_section "Configuration: Service User"
+    
+    # For system scope, ask for service user
+    if [ "$SERVICE_MODE" = "system" ]; then
+        print_info "System-level services require a dedicated user"
+        echo "Service user (default: redditview):"
+        read -p "Enter username: " user_input
+        if [ -n "$user_input" ]; then
+            USERNAME="$user_input"
+        else
+            USERNAME="redditview"
+        fi
+    fi
+    
+    if ! id "$USERNAME" &>/dev/null; then
+        print_warning "User '$USERNAME' does not exist"
+        
+        # For system scope, offer to create user
+        if [ "$SERVICE_MODE" = "system" ]; then
+            echo "Create this user? (y/n)"
+            read -r response
+            if [ "$response" = "y" ]; then
+                if useradd -m -s /bin/bash "$USERNAME"; then
+                    print_success "Created user '$USERNAME'"
+                else
+                    print_error "Failed to create user"
+                    return 1
+                fi
+            else
+                print_error "User '$USERNAME' must exist"
+                return 1
+            fi
         fi
     else
         print_success "User '$USERNAME' exists"
     fi
     
-    # Verify ownership
-    if [ ! -O "$INSTALL_PATH" ]; then
-        print_warning "Installation path is not owned by '$USERNAME'"
-        echo "Change ownership? (y/n)"
-        read -r response
-        if [ "$response" = "y" ]; then
-            if sudo chown -R "$USERNAME:$USERNAME" "$INSTALL_PATH"; then
-                print_success "Changed ownership to '$USERNAME'"
-            else
-                print_error "Failed to change ownership"
-                return 1
+    # Verify ownership for system scope
+    if [ "$SERVICE_MODE" = "system" ]; then
+        if [ ! -O "$INSTALL_PATH" ]; then
+            print_warning "Installation path is not owned by '$USERNAME'"
+            echo "Change ownership to '$USERNAME'? (y/n)"
+            read -r response
+            if [ "$response" = "y" ]; then
+                if chown -R "$USERNAME:$USERNAME" "$INSTALL_PATH"; then
+                    print_success "Changed ownership to '$USERNAME'"
+                else
+                    print_error "Failed to change ownership"
+                    return 1
+                fi
             fi
         fi
     fi
@@ -278,10 +382,10 @@ configure_user() {
 }
 
 configure_mode() {
-    print_section "Configuration: Installation Mode"
+    print_section "Configuration: Service Mode"
     
-    if [ -z "$INSTALL_MODE" ]; then
-        echo "Select installation mode:"
+    if [ -z "$INSTALL_MODE" ] || [ "$INSTALL_MODE" = "both" ]; then
+        echo "Select service mode:"
         echo "  1) both       - API Server + TUI with tmux (recommended)"
         echo "  2) api-only   - API Server only"
         echo "  3) web-only   - Web interface only"
@@ -386,10 +490,18 @@ build_tui_binary() {
 create_systemd_service() {
     local service_name=$1
     local template_file=$2
-    local output_file="$HOME/.config/systemd/user/$service_name"
+    local output_file="$SERVICE_DIR/$service_name"
     
     # Create directory if it doesn't exist
-    mkdir -p "$HOME/.config/systemd/user"
+    if [ "$SERVICE_MODE" = "user" ]; then
+        mkdir -p "$SERVICE_DIR"
+    else
+        # For system scope, directory should already exist
+        if [ ! -d "$SERVICE_DIR" ]; then
+            print_error "Directory $SERVICE_DIR does not exist"
+            return 1
+        fi
+    fi
     
     # Copy and substitute variables
     log_verbose "Creating $service_name from $template_file"
@@ -407,7 +519,13 @@ create_systemd_service() {
         -e "s|__TUI_BIN__|$tui_bin|g" \
         "$template_file" > "$output_file"
     
-    chmod 644 "$output_file"
+    # Set proper permissions
+    if [ "$SERVICE_MODE" = "user" ]; then
+        chmod 644 "$output_file"
+    else
+        chmod 644 "$output_file"
+    fi
+    
     print_success "Created: $output_file"
     
     return 0
@@ -449,7 +567,11 @@ install_services() {
     
     # Reload systemd daemon
     print_info "Reloading systemd daemon..."
-    systemctl --user daemon-reload
+    if [ "$SERVICE_MODE" = "user" ]; then
+        systemctl --user daemon-reload
+    else
+        systemctl daemon-reload
+    fi
     print_success "Systemd daemon reloaded"
     
     return 0
@@ -465,32 +587,32 @@ enable_services() {
     case $INSTALL_MODE in
         both)
             print_info "Enabling redditview-api..."
-            systemctl --user enable redditview-api.service
+            systemctl $SYSTEMCTL_SCOPE enable redditview-api.service
             print_success "Enabled redditview-api"
             
             print_info "Enabling redditview-tui..."
-            systemctl --user enable redditview-tui.service
+            systemctl $SYSTEMCTL_SCOPE enable redditview-tui.service
             print_success "Enabled redditview-tui"
             
-            # Enable lingering for user services (if needed for boot)
-            if systemctl --user is-enabled --quiet redditview-api; then
+            # For user scope, enable lingering
+            if [ "$SERVICE_MODE" = "user" ]; then
                 echo "Enable services to start at boot? (y/n)"
                 read -r response
                 if [ "$response" = "y" ]; then
                     print_info "Enabling user session to run at boot..."
-                    sudo loginctl enable-linger "$USERNAME"
+                    sudo loginctl enable-linger "$USERNAME" 2>/dev/null || true
                     print_success "User session will start at boot"
                 fi
             fi
             ;;
         api-only)
             print_info "Enabling redditview-api..."
-            systemctl --user enable redditview-api.service
+            systemctl $SYSTEMCTL_SCOPE enable redditview-api.service
             print_success "Enabled redditview-api"
             ;;
         web-only)
             print_info "Enabling redditview-web..."
-            systemctl --user enable redditview-web.service
+            systemctl $SYSTEMCTL_SCOPE enable redditview-web.service
             print_success "Enabled redditview-web"
             ;;
     esac
@@ -506,23 +628,23 @@ start_services() {
     case $INSTALL_MODE in
         both)
             print_info "Starting redditview-api..."
-            systemctl --user start redditview-api.service
+            systemctl $SYSTEMCTL_SCOPE start redditview-api.service
             print_success "Started redditview-api"
             
             sleep 2  # Wait for API to start
             
             print_info "Starting redditview-tui..."
-            systemctl --user start redditview-tui.service
+            systemctl $SYSTEMCTL_SCOPE start redditview-tui.service
             print_success "Started redditview-tui"
             ;;
         api-only)
             print_info "Starting redditview-api..."
-            systemctl --user start redditview-api.service
+            systemctl $SYSTEMCTL_SCOPE start redditview-api.service
             print_success "Started redditview-api"
             ;;
         web-only)
             print_info "Starting redditview-web..."
-            systemctl --user start redditview-web.service
+            systemctl $SYSTEMCTL_SCOPE start redditview-web.service
             print_success "Started redditview-web"
             ;;
     esac
@@ -543,20 +665,20 @@ show_status() {
         both)
             echo ""
             print_info "API Service Status:"
-            systemctl --user status redditview-api.service --no-pager || true
+            systemctl $SYSTEMCTL_SCOPE status redditview-api.service --no-pager || true
             echo ""
             print_info "TUI Service Status:"
-            systemctl --user status redditview-tui.service --no-pager || true
+            systemctl $SYSTEMCTL_SCOPE status redditview-tui.service --no-pager || true
             ;;
         api-only)
             echo ""
             print_info "API Service Status:"
-            systemctl --user status redditview-api.service --no-pager || true
+            systemctl $SYSTEMCTL_SCOPE status redditview-api.service --no-pager || true
             ;;
         web-only)
             echo ""
             print_info "Web Service Status:"
-            systemctl --user status redditview-web.service --no-pager || true
+            systemctl $SYSTEMCTL_SCOPE status redditview-web.service --no-pager || true
             ;;
     esac
     
@@ -566,46 +688,59 @@ show_status() {
 show_next_steps() {
     print_section "Next Steps"
     
+    local systemctl_cmd="systemctl"
+    local journalctl_cmd="journalctl"
+    
+    if [ "$SERVICE_MODE" = "user" ]; then
+        systemctl_cmd="systemctl --user"
+        journalctl_cmd="journalctl --user"
+    else
+        systemctl_cmd="sudo systemctl"
+        journalctl_cmd="sudo journalctl"
+    fi
+    
     case $INSTALL_MODE in
         both)
             cat << EOF
 
 ${GREEN}✓ RedditView services installed successfully!${NC}
 
-${BLUE}To access your services:${NC}
+${BLUE}Installation Scope:${NC} $SERVICE_MODE (in $SERVICE_DIR)
 
-  ${CYAN}API Server Logs:${NC}
-    journalctl --user -u redditview-api -f
+${BLUE}To manage your services:${NC}
 
-  ${CYAN}TUI Logs:${NC}
-    journalctl --user -u redditview-tui -f
+  ${CYAN}View API logs:${NC}
+    $journalctl_cmd -u redditview-api -f
+
+  ${CYAN}View TUI logs:${NC}
+    $journalctl_cmd -u redditview-tui -f
 
   ${CYAN}Connect to TUI session:${NC}
     tmux attach-session -t redditview
 
-  ${CYAN}API Server Status:${NC}
-    systemctl --user status redditview-api
+  ${CYAN}API Service Status:${NC}
+    $systemctl_cmd status redditview-api
 
   ${CYAN}TUI Service Status:${NC}
-    systemctl --user status redditview-tui
+    $systemctl_cmd status redditview-tui
 
 ${BLUE}Common Commands:${NC}
 
   ${CYAN}Stop services:${NC}
-    systemctl --user stop redditview-api redditview-tui
+    $systemctl_cmd stop redditview-api redditview-tui
 
   ${CYAN}Restart services:${NC}
-    systemctl --user restart redditview-api redditview-tui
+    $systemctl_cmd restart redditview-api redditview-tui
 
   ${CYAN}Start services:${NC}
-    systemctl --user start redditview-api redditview-tui
+    $systemctl_cmd start redditview-api redditview-tui
 
   ${CYAN}Disable from boot:${NC}
-    systemctl --user disable redditview-api redditview-tui
+    $systemctl_cmd disable redditview-api redditview-tui
 
   ${CYAN}View service files:${NC}
-    cat ~/.config/systemd/user/redditview-api.service
-    cat ~/.config/systemd/user/redditview-tui.service
+    cat $SERVICE_DIR/redditview-api.service
+    cat $SERVICE_DIR/redditview-tui.service
 
 ${BLUE}Web Access:${NC}
   Open http://localhost:3000 in your browser
@@ -620,19 +755,21 @@ EOF
 
 ${GREEN}✓ RedditView API service installed successfully!${NC}
 
+${BLUE}Installation Scope:${NC} $SERVICE_MODE (in $SERVICE_DIR)
+
 ${BLUE}To manage your service:${NC}
 
   ${CYAN}View logs:${NC}
-    journalctl --user -u redditview-api -f
+    $journalctl_cmd -u redditview-api -f
 
   ${CYAN}Service status:${NC}
-    systemctl --user status redditview-api
+    $systemctl_cmd status redditview-api
 
   ${CYAN}Stop service:${NC}
-    systemctl --user stop redditview-api
+    $systemctl_cmd stop redditview-api
 
   ${CYAN}Restart service:${NC}
-    systemctl --user restart redditview-api
+    $systemctl_cmd restart redditview-api
 
 ${BLUE}Web Access:${NC}
   Open http://localhost:3000 in your browser
@@ -647,19 +784,21 @@ EOF
 
 ${GREEN}✓ RedditView Web service installed successfully!${NC}
 
+${BLUE}Installation Scope:${NC} $SERVICE_MODE (in $SERVICE_DIR)
+
 ${BLUE}To manage your service:${NC}
 
   ${CYAN}View logs:${NC}
-    journalctl --user -u redditview-web -f
+    $journalctl_cmd -u redditview-web -f
 
   ${CYAN}Service status:${NC}
-    systemctl --user status redditview-web
+    $systemctl_cmd status redditview-web
 
   ${CYAN}Stop service:${NC}
-    systemctl --user stop redditview-web
+    $systemctl_cmd stop redditview-web
 
   ${CYAN}Restart service:${NC}
-    systemctl --user restart redditview-web
+    $systemctl_cmd restart redditview-web
 
 ${BLUE}Web Access:${NC}
   Open http://localhost:3000 in your browser
@@ -687,6 +826,10 @@ parse_arguments() {
                 INSTALL_PATH="$2"
                 shift 2
                 ;;
+            -s|--scope)
+                SERVICE_MODE="$2"
+                shift 2
+                ;;
             -u|--user)
                 USERNAME="$2"
                 shift 2
@@ -695,7 +838,7 @@ parse_arguments() {
                 ENABLE_SERVICE=true
                 shift
                 ;;
-            -s|--start)
+            -x|--start)
                 START_SERVICE=true
                 shift
                 ;;
@@ -738,6 +881,10 @@ main() {
     fi
     
     if ! configure_install_path; then
+        return 1
+    fi
+    
+    if ! configure_scope; then
         return 1
     fi
     
