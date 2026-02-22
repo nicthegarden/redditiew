@@ -14,15 +14,15 @@ import (
 // Models matching @redditview/core
 
 type RedditPostData struct {
-	ID       string `json:"id"`
-	Title    string `json:"title"`
-	Author   string `json:"author"`
-	Score    int    `json:"score"`
-	Created  int64  `json:"created_utc"`
-	Comments int    `json:"num_comments"`
-	SelfText string `json:"selftext"`
-	URL      string `json:"url"`
-	SubName  string `json:"subreddit"`
+	ID       string      `json:"id"`
+	Title    string      `json:"title"`
+	Author   string      `json:"author"`
+	Score    int         `json:"score"`
+	Created  float64     `json:"created_utc"`
+	Comments int         `json:"num_comments"`
+	SelfText string      `json:"selftext"`
+	URL      string      `json:"url"`
+	SubName  string      `json:"subreddit"`
 }
 
 type RedditPost struct {
@@ -60,7 +60,8 @@ func (c *APIClient) FetchPosts(subreddit string) ([]RedditPostData, error) {
 
 	var result RedditResponse
 	if err := json.Unmarshal(data, &result); err != nil {
-		return nil, err
+		// Log the error with context
+		return nil, fmt.Errorf("failed to parse Reddit API response: %w", err)
 	}
 
 	posts := make([]RedditPostData, 0, len(result.Data.Children))
