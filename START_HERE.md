@@ -45,7 +45,7 @@ Then open: http://localhost:5173
 ```bash
 ./launch.sh tui
 ```
-Split-view interface with post list (left), post details (right), search by `/`, navigate with arrow keys/j/k, press `q` to quit.
+Modern, multi-screen TUI with full feature parity to web. Navigate posts, search, switch subreddits, view details and comments. Use j/k or arrows to navigate, `/` to search, `s` to switch subreddit, `q` to quit.
 
 **Both Web + TUI (Full Stack):**
 ```bash

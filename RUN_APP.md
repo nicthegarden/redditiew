@@ -34,14 +34,25 @@ The web app will automatically proxy API requests to localhost:3002.
 
 This starts:
 1. API Server (port 3002)
-2. Go TUI app with split-view interface
+2. Go TUI app with full feature parity to web
 
-**Split-View Features:**
-- **Left sidebar:** Searchable post list with upvotes and comment count
-- **Right sidebar:** Detailed view of selected post with content and link
-- **Search:** Press `/` to enter search mode, filter by title/author, ESC to cancel
-- **Navigation:** Use `↑`/`↓` or `j`/`k` to move between posts, `ENTER` to select
-- **Controls:** `q` to quit
+**Features:**
+- Complete post browsing and navigation
+- Real-time search and filtering
+- Subreddit switching (press `s`)
+- Full post details with content display
+- Comment viewing support
+- Professional color scheme
+- Responsive terminal layout
+
+**Controls:**
+- `j/k` or `↑↓`: Navigate posts
+- `/`: Search posts
+- `s`: Switch subreddit
+- `Enter`: View post details
+- `c`: View comments
+- `b`: Go back
+- `q`: Quit
 
 ---
 
