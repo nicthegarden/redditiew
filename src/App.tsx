@@ -140,7 +140,25 @@ export default function App() {
       const limit = 50
       const target = `${API_BASE}/r/${subreddit}.json?limit=${limit}${cursor ? '&after=' + cursor : ''}`
       const res = await fetch(target)
-      if (!res.ok) throw new Error('Failed to load')
+      
+      // Handle rate limiting
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}))
+        const retryAfter = data.retry_after || 60
+        setError(`Rate limited. Please try again in ${retryAfter} seconds.`)
+        return
+      }
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          throw new Error(`Subreddit r/${subreddit} not found`)
+        }
+        if (res.status >= 500) {
+          throw new Error('Reddit server error. Please try again later.')
+        }
+        throw new Error(`Failed to load (${res.status})`)
+      }
+
       const data = await res.json()
       const items = data.data.children as RedditPost[]
       
@@ -153,7 +171,9 @@ export default function App() {
       setAfter(data.data.after)
       setSub(subreddit)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      console.error('Fetch error:', message)
+      setError(message)
     } finally {
       setLoading(false)
     }
