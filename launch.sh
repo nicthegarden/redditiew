@@ -86,14 +86,15 @@ if [ "$LAUNCH_WEB" = true ]; then
     sleep 3
 fi
 
-# Start TUI
+# Start TUI (in foreground - no & since it needs interactive TTY)
 if [ "$LAUNCH_TUI" = true ]; then
     echo -e "${GREEN}▶ Starting TUI (Terminal UI)${NC}"
+    echo -e "${YELLOW}Controls: ↑↓/jk=navigate, q=quit${NC}"
     echo ""
     cd apps/tui
-    go run main.go &
+    go run main.go
     cd - > /dev/null
 fi
 
-# Wait for all background processes
-wait
+# Wait for remaining background processes (API and Web if running)
+wait 2>/dev/null || true

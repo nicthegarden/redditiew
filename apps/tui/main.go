@@ -89,6 +89,7 @@ func initialModel() Model {
 		client:   NewAPIClient(),
 		selected: 0,
 		sub:      "golang",
+		loading:  true,  // Set to true initially so we show "Loading..." message
 	}
 }
 
