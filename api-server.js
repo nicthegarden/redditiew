@@ -209,6 +209,18 @@ const server = http.createServer(async (req, res) => {
   }
 })
 
+// Handle port already in use error with graceful message
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ ERROR: Port ${API_PORT} is already in use!`)
+    console.error('A previous instance is still running. Waiting for system cleanup...')
+    process.exit(1)
+  } else {
+    console.error('Server error:', err)
+    process.exit(1)
+  }
+})
+
 server.listen(API_PORT, () => {
   console.log(`
 ╭─────────────────────────────────────╮
