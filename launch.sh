@@ -42,14 +42,28 @@ fi
 cleanup() {
     echo ""
     echo -e "${YELLOW}Shutting down...${NC}"
-    pkill -P $$ || true
-    wait
+    pkill -P $$ 2>/dev/null || true
+    # Also kill any processes using our ports
+    lsof -ti:3002 2>/dev/null | xargs kill -9 2>/dev/null || true
+    lsof -ti:5173 2>/dev/null | xargs kill -9 2>/dev/null || true
+    wait 2>/dev/null || true
 }
 trap cleanup EXIT
+
+# Function to kill process on port
+kill_port() {
+    local port=$1
+    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+        echo -e "${YELLOW}  Cleaning up port $port...${NC}"
+        lsof -ti :$port | xargs kill -9 2>/dev/null || true
+        sleep 1
+    fi
+}
 
 # Start API Server
 if [ "$LAUNCH_API" = true ]; then
     echo -e "${GREEN}▶ Starting API Server (port 3002)${NC}"
+    kill_port 3002
     node api-server.js &
     sleep 2
     
@@ -67,6 +81,7 @@ if [ "$LAUNCH_WEB" = true ]; then
     echo -e "${GREEN}▶ Starting Web App (port 5173)${NC}"
     echo -e "${YELLOW}  → Open http://localhost:5173${NC}"
     echo ""
+    kill_port 5173
     npm run dev &
     sleep 3
 fi
