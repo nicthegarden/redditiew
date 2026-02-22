@@ -878,7 +878,7 @@ func (m Model) renderLoading() string {
 		Render(fmt.Sprintf("%s Loading r/%s...", m.spinner.View(), m.subreddit))
 }
 
-func (m Model) renderMain() string {
+func (m *Model) renderMain() string {
 	// Header
 	header := headerStyle.Render(fmt.Sprintf("  🔥 r/%s  %d posts", m.subreddit, len(m.filteredPosts)))
 	
@@ -925,12 +925,12 @@ func (m Model) renderInfoBar() string {
 		Render("▲/▼ (k/j): navigate  Enter: view  Ctrl+F: search  Ctrl+R: subreddit  F5: refresh  q: quit")
 }
 
-func (m Model) renderListOnly() string {
+func (m *Model) renderListOnly() string {
 	m.updateListSize()
 	return m.list.View()
 }
 
-func (m Model) renderWithDetails() string {
+func (m *Model) renderWithDetails() string {
 	// Split view: list on top, details on bottom
 	listHeight := (m.windowHeight - 8) / 2
 	detailsHeight := m.windowHeight - 8 - listHeight - 1
@@ -1071,7 +1071,10 @@ func (m Model) renderDetailsSection(height int) string {
 
 func (m Model) renderFooter() string {
 	if m.showDetails {
-		return footerStyle.Render("Esc/Tab: back to list  •  Ctrl+F: search  •  F5: refresh  •  q: quit")
+		if m.showComments {
+			return footerStyle.Render("↑↓: scroll comments  •  h/l: switch posts  •  Esc: close comments  •  Ctrl+F: search  •  q: quit")
+		}
+		return footerStyle.Render("↑↓: scroll details  •  h/l: switch posts  •  Esc/Tab: back to list  •  c: view comments  •  q: quit")
 	}
 	
 	status := "no posts"
