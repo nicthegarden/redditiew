@@ -41,37 +41,34 @@ Complete guides for:
 
 ## 🚀 Quick Start
 
-### Option 1: Run React Web App (as before)
+### 🌐 Run React Web App (Easiest)
 ```bash
 npm install
 npm run build
-npm run dev
+./launch.sh web
 # Visit http://localhost:5173
 ```
 
-### Option 2: Run Go TUI App
+### 💻 Run Go TUI App
 ```bash
-# Terminal 1: Start API server
 npm install
 npm run build
-npm run dev:api
-
-# Terminal 2: Start TUI app
-cd apps/tui
-go run main.go
+./launch.sh tui
+# Navigate with ↑↓/jk, press q to quit
 ```
 
-### Option 3: Run Both Together
+### 🔄 Run Both Together
 ```bash
-# Terminal 1: API server
-npm run dev:api
+npm install
+npm run build
+./launch.sh all
+```
 
-# Terminal 2: Web app
-npm run dev
-
-# Terminal 3: TUI app
-cd apps/tui
-go run main.go
+### 🛠️ Run API Server Only
+```bash
+npm install
+npm run build
+./launch.sh api
 ```
 
 ## 📁 File Structure
@@ -95,8 +92,10 @@ redditiew-monorepo/
 │   └── tui/
 │       ├── main.go                 → Bubble Tea TUI
 │       └── go.mod
-├── api-server.ts                   → Node.js backend (port 3002)
-├── proxy.ts                        → Old proxy (can be deprecated)
+├── api-server.js                   → Node.js backend (port 3002)
+├── api-server.ts                   → TypeScript version (deprecated)
+├── launch.sh                        → Multi-platform launcher (recommended)
+├── proxy.ts                        → Old proxy (deprecated)
 ├── package.json                    → Monorepo with workspaces
 ├── MONOREPO_ARCHITECTURE.md
 ├── TUI_SETUP_GUIDE.md

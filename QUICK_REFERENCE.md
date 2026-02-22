@@ -9,24 +9,40 @@
 
 ## Running the Web App
 
-- [ ] Run `npm run dev` in project root
-- [ ] Open http://localhost:5173 in browser
-- [ ] Verify posts load from r/sysadmin
-- [ ] Click posts to see comments
+```bash
+./launch.sh web
+```
+
+Then open http://localhost:5173 in browser.
+
+**What it does**:
+- Starts API server on port 3002
+- Starts React web app on port 5173
+- Vite proxy routes `/api` requests to API server
 
 **Port**: 5173  
-**Proxy**: Vite's built-in proxy (no additional server needed)
+**API Port**: 3002
 
 ## Running the Go TUI
 
-### Terminal 1: Start API Server
+### Single Command (Recommended)
 ```bash
-npm run build    # Build core package
-npm run dev:api  # Start server on port 3002
+./launch.sh tui
+```
+
+This starts:
+1. API Server on port 3002
+2. Go TUI app in terminal
+
+### Manual Setup (Two Terminals)
+
+**Terminal 1: Start API Server**
+```bash
+node api-server.js
 ```
 Verify: `curl http://localhost:3002/health`
 
-### Terminal 2: Run TUI App
+**Terminal 2: Run TUI App**
 ```bash
 cd apps/tui
 go run main.go
@@ -47,10 +63,15 @@ npm run build --workspace=@redditview/core  # Build just core
 
 ### Development
 ```bash
-npm run dev               # Start web app (port 5173)
-npm run dev:api          # Start API server (port 3002)
-npm run dev:vite         # Just Vite, no proxy
-npm run dev:proxy        # Just old proxy (deprecated)
+./launch.sh web                    # Start web app (port 5173)
+./launch.sh tui                    # Start TUI app (uses API on 3002)
+./launch.sh all                    # Start web + TUI + API
+./launch.sh api                    # Start API server only (port 3002)
+
+# Alternative (manual control):
+npm run dev                        # Start web app (Vite, port 5173)
+node api-server.js                # Start API server (port 3002)
+cd apps/tui && go run main.go     # Start TUI app
 ```
 
 ### Maintenance
@@ -135,8 +156,9 @@ const search = await client.search('TypeScript', { limit: 20 })
 - Module: `apps/tui/go.mod`
 
 ### Backend
-- API Server: `api-server.ts` (root)
+- API Server: `api-server.js` (root, main app starter)
 - Old Proxy: `proxy.ts` (deprecated)
+- Launcher: `launch.sh` (multi-platform starter)
 
 ## Common Tasks
 
@@ -254,14 +276,13 @@ npm run build
 
 ### TUI shows "Loading posts..." forever
 ```bash
-# Terminal 1: Check API server
-npm run dev:api
-
-# Terminal 2: Test API manually
+# Check if API server is running:
 curl http://localhost:3002/health
-curl http://localhost:3002/api/r/golang.json?limit=5
 
-# Terminal 3: Restart TUI
+# If not, start it:
+node api-server.js
+
+# Then start TUI:
 cd apps/tui && go run main.go
 ```
 

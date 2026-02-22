@@ -35,32 +35,26 @@ npm run build
 
 ### Step 3: Run the Application (choose one)
 
-**Web App (easiest):**
+**Web App (easiest - RECOMMENDED):**
 ```bash
-npm run dev
+./launch.sh web
 ```
 Then open: http://localhost:5173
 
-**Go TUI App:**
+**Go TUI App (Terminal User Interface):**
 ```bash
-# Terminal 1
-npm run dev:api
+./launch.sh tui
+```
+Navigate with arrow keys or `j`/`k`, press `q` to quit.
 
-# Terminal 2
-cd apps/tui
-go run main.go
+**Both Web + TUI (Full Stack):**
+```bash
+./launch.sh all
 ```
 
-**Both Web + TUI:**
+**API Server Only (for custom integrations):**
 ```bash
-# Terminal 1
-npm run dev:api
-
-# Terminal 2
-npm run dev
-
-# Terminal 3
-cd apps/tui && go run main.go
+./launch.sh api
 ```
 
 ## Documentation Files
@@ -81,18 +75,18 @@ sudo pacman -S go base-devel curl
 # Install and build project
 npm install && npm run build
 
-# Run web app
-npm run dev
+# Run web app (easiest)
+./launch.sh web
 # → Open http://localhost:5173
 
-# Run TUI
-npm run dev:api      # Terminal 1
-cd apps/tui && go run main.go  # Terminal 2
+# Run TUI (Terminal UI)
+./launch.sh tui
 
-# Run both
-npm run dev:api      # Terminal 1
-npm run dev          # Terminal 2
-cd apps/tui && go run main.go  # Terminal 3
+# Run both web + TUI
+./launch.sh all
+
+# Run API server only
+./launch.sh api
 ```
 
 ## Troubleshooting
@@ -123,11 +117,15 @@ kill -9 <PID>
 1. Install Go: `sudo pacman -S go`
 2. Navigate: `cd /path/to/redditiew-local`
 3. Install: `npm install && npm run build`
-4. Run: `npm run dev`
-5. Open browser: `http://localhost:5173`
+4. Choose your app:
+   - **Web:** `./launch.sh web` → http://localhost:5173
+   - **TUI:** `./launch.sh tui` (keyboard: ↑↓/jk, q=quit)
+   - **Both:** `./launch.sh all`
 
 ## That's It!
 
-Once Go is installed, everything else is automatic. 
+Once Go is installed and you run the launch script, everything else is automatic.
+
+See **RUN_APP.md** for more detailed instructions.
 
 Happy coding! 🎉
