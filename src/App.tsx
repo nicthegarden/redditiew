@@ -329,6 +329,10 @@ export default function App() {
     setShowSuggestions(search.length > 0 && focused === 'filter')
   }, [search, posts, focused])
 
+  const filteredPosts = search.trim()
+    ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
+    : posts
+
   useEffect(() => {
     if (listRef.current && selectedIndex >= 0) {
       const items = listRef.current.children
@@ -337,10 +341,6 @@ export default function App() {
       }
     }
   }, [selectedIndex, filteredPosts.length])
-
-  const filteredPosts = search.trim()
-    ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
-    : posts
 
   return (
     <div className="app">
