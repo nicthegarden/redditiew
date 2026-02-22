@@ -1,5 +1,7 @@
 # RedditView - Multi-Interface Reddit Browser
 
+**Repository**: [github.com/nicthegarden/redditiew](https://github.com/nicthegarden/redditiew)
+
 A modern, feature-rich Reddit client available in both Terminal User Interface (TUI) and Web UI formats. Browse Reddit posts, read comments, and open threads directly from your terminal or web browser.
 
 ## 🎯 Features
@@ -382,9 +384,9 @@ This project is licensed under the MIT License - see LICENSE file for details.
 
 ## 🙋 Support & Feedback
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/redditiew-local/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/redditiew-local/discussions)
-- **Email**: support@example.com
+- **Repository**: [GitHub - nicthegarden/redditiew](https://github.com/nicthegarden/redditiew)
+- **Issues**: [GitHub Issues](https://github.com/nicthegarden/redditiew/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/nicthegarden/redditiew/discussions)
 
 ## 🎉 Acknowledgments
 
