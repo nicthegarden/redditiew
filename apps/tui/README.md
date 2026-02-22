@@ -97,10 +97,11 @@ Post 1/50  •  Ctrl+F: search  •  Ctrl+R: subreddit  •  F5: refresh  •  q
 ## 🏗️ Architecture
 
 ### Single-Pane Design
+- **Bubble Tea List Component**: Efficient post rendering with viewport management
 - **All content in one view**: No screen switching
-- **Post list with expanded detail**: Selected post shows full content
-- **Efficient scrolling**: Scroll through all posts and details
-- **Comments section**: Ready for comment tree display below posts
+- **Post list with expanded detail**: Selected post shows full content below the list
+- **Efficient scrolling**: Separate scroll positions for list and detail views
+- **Dynamic layout**: Automatically adjusts for split-view (list + detail) or full-screen modes
 
 ### Keyboard-First Navigation
 - **Vim-style shortcuts**: j/k for navigation
@@ -126,14 +127,27 @@ Display to Terminal
 ### Built With
 - **Language**: Go 1.16+
 - **Framework**: Bubble Tea (TUI framework)
-- **Styling**: Lipgloss
+- **List Component**: bubbles/list (efficient viewport management)
+- **Text Input**: bubbles/textinput (search and subreddit editing)
+- **Spinner**: bubbles/spinner (loading indicator)
+- **Styling**: Lipgloss (terminal styling and colors)
 - **API**: Node.js on port 3002
 
 ### Dependencies
 ```
 github.com/charmbracelet/bubbletea  v1.3.10
-github.com/charmbracelet/lipgloss   v0.16.0
+github.com/charmbracelet/bubbles    v0.17.0+
+github.com/charmbracelet/lipgloss   v0.16.0+
 ```
+
+### List Component Features
+- **PostItem Implementation**: Custom struct implementing list.Item interface
+  - `FilterValue()`: Enables search/filter functionality
+  - `Title()`: Displays post title in list
+  - `Description()`: Shows author, score, and comment count
+- **Viewport Management**: List component handles rendering only visible items
+- **Keyboard Navigation**: Full j/k/arrow key support with Home/End
+- **Split-View Rendering**: Dynamic height calculation for list + detail view
 
 ### Performance
 - 50 posts load in < 1 second
