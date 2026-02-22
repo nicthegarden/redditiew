@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CommentsList from './CommentsList'
 
 interface PostDetailProps {
   post: {
@@ -84,9 +85,7 @@ export default function PostDetail({ post }: PostDetailProps) {
 
       <div className="comments-section">
         <h3>Comments ({formatNum(data.num_comments)})</h3>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-          Open on Reddit to view comments
-        </p>
+        <CommentsList permalink={data.permalink} />
       </div>
     </div>
   )
