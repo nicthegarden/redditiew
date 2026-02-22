@@ -10,7 +10,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/spinner"
 )
@@ -44,13 +43,11 @@ var (
 	
 	focusedBorderStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(colorOrange).
-		Padding(0, 1)
+		BorderForeground(colorOrange)
 	
 	unfocusedBorderStyle = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(colorDarkGray).
-		Padding(0, 1)
+		BorderForeground(colorDarkGray)
 	
 	footerStyle = lipgloss.NewStyle().
 		Background(colorDarkGray).
@@ -144,29 +141,6 @@ func (c *APIClient) FetchPosts(subreddit string) ([]RedditPostData, error) {
 	return posts, nil
 }
 
-// ============= List Item Implementation =============
-
-type PostItem struct {
-	post RedditPostData
-}
-
-func (p PostItem) FilterValue() string {
-	return strings.ToLower(p.post.Title + " " + p.post.Author)
-}
-
-func (p PostItem) Title() string {
-	const maxLen = 50
-	title := p.post.Title
-	if len(title) > maxLen {
-		title = title[:maxLen-3] + "..."
-	}
-	return title
-}
-
-func (p PostItem) Description() string {
-	return fmt.Sprintf("u/%s • ⬆%d • 💬%d", p.post.Author, p.post.Score, p.post.Comments)
-}
-
 // ============= Main Model =============
 
 type Model struct {
@@ -184,7 +158,6 @@ type Model struct {
 	commentsLoaded bool
 	
 	// UI Components
-	list            list.Model
 	searchInput     textinput.Model
 	subredditInput  textinput.Model
 	spinner         spinner.Model
@@ -199,8 +172,6 @@ type Model struct {
 	// Scroll positions
 	detailScrollY  int
 	commentsScrollY int
-	maxDetailScroll int
-	maxCommentsScroll int
 	
 	// Layout
 	windowWidth  int
@@ -224,10 +195,6 @@ func initialModel() Model {
 	subInput.Placeholder = "Enter subreddit..."
 	subInput.CharLimit = 50
 	
-	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.Title = ""
-	l.SetFilteringEnabled(false)
-	
 	m := Model{
 		client:        NewAPIClient(),
 		subreddit:     "golang",
@@ -235,12 +202,12 @@ func initialModel() Model {
 		spinner:       s,
 		searchInput:   searchInput,
 		subredditInput: subInput,
-		list:          l,
 		loading:       true,
-		windowWidth:   200,
-		windowHeight:  50,
+		windowWidth:   120,
+		windowHeight:  40,
 	}
 	
+	m.calculatePaneDimensions()
 	return m
 }
 
@@ -283,9 +250,11 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		return m.handleKeyPress(msg)
+		m, cmd = m.handleKeyPress(msg)
+		return m, cmd
 		
 	case postsLoadedMsg:
 		if msg.error != nil {
@@ -293,7 +262,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.posts = msg.posts
 			m.filteredPosts = msg.posts
-			m.updateListItems()
 			if len(msg.posts) > 0 {
 				m.selectedPost = &msg.posts[0]
 				m.selectedIndex = 0
@@ -306,11 +274,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.windowWidth = msg.Width
 		m.windowHeight = msg.Height
 		m.calculatePaneDimensions()
-		m.list.SetSize(m.paneWidth, m.paneHeight-3)
 		return m, nil
 		
 	case spinner.TickMsg:
-		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	}
@@ -319,15 +285,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) calculatePaneDimensions() {
-	// Left pane gets 30% of width
-	// Middle pane gets 40% of width
-	// Right pane gets 30% of width
-	// Subtract 2 for pane borders
-	m.paneWidth = (m.windowWidth - 6) / 3
-	m.paneHeight = m.windowHeight - 3 // Header + footer
+	// Divide equally: Total width minus borders/margins
+	// Each pane takes (width - 4) / 3 (4 is minimum for separators)
+	availableWidth := m.windowWidth - 4
+	if availableWidth < 60 {
+		availableWidth = 60 // Minimum for 3 panes
+	}
+	m.paneWidth = availableWidth / 3
+	m.paneHeight = m.windowHeight - 4 // Header + footer
+	if m.paneHeight < 10 {
+		m.paneHeight = 10
+	}
 }
 
-func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 	// Handle subreddit selection mode
 	if m.selectingSub {
 		switch msg.String() {
@@ -401,7 +372,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) handlePostListKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) handlePostListKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 	case "up", "k":
 		if m.selectedIndex > 0 {
@@ -427,35 +398,28 @@ func (m Model) handlePostListKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) handlePostDetailKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) handlePostDetailKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 	case "up", "k":
 		if m.detailScrollY > 0 {
 			m.detailScrollY--
 		}
 	case "down", "j":
-		if m.detailScrollY < m.maxDetailScroll {
-			m.detailScrollY++
-		}
+		m.detailScrollY++
 	}
 	return m, nil
 }
 
-func (m Model) handleCommentsKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) handleCommentsKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 	switch msg.String() {
 	case "up", "k":
 		if m.commentsScrollY > 0 {
 			m.commentsScrollY--
 		}
 	case "down", "j":
-		if m.commentsScrollY < m.maxCommentsScroll {
-			m.commentsScrollY++
-		}
+		m.commentsScrollY++
 	case "c":
-		if m.selectedPost != nil && len(m.comments) > 0 {
-			// Toggle collapse on focused comment
-			// For now, simple implementation
-		}
+		// Toggle collapse (placeholder for now)
 	}
 	return m, nil
 }
@@ -477,15 +441,6 @@ func (m *Model) filterPosts(query string) {
 	if len(m.filteredPosts) > 0 {
 		m.selectedPost = &m.filteredPosts[0]
 	}
-	m.updateListItems()
-}
-
-func (m *Model) updateListItems() {
-	items := make([]list.Item, len(m.filteredPosts))
-	for i, post := range m.filteredPosts {
-		items[i] = PostItem{post}
-	}
-	m.list.SetItems(items)
 }
 
 // ============= Rendering =============
@@ -533,9 +488,6 @@ func (m Model) render3PaneLayout() string {
 			Render("Tab: focus | j/k: navigate | /: search | s: subreddit | q: quit")
 	}
 	
-	// Calculate pane dimensions
-	m.calculatePaneDimensions()
-	
 	// Render three panes side by side
 	leftPane := m.renderPostListPane()
 	middlePane := m.renderPostDetailPane()
@@ -558,40 +510,44 @@ func (m Model) render3PaneLayout() string {
 func (m Model) renderPostListPane() string {
 	title := "📬 Posts"
 	if m.focusedPane == PanePostList {
-		title = "📬 Posts (focused)"
+		title = " 📬 Posts (focused) "
 	}
 	
-	paneTitle := lipgloss.NewStyle().
-		Foreground(colorOrange).
-		Bold(true).
-		Padding(0, 1).
-		Render(title)
-	
-	// Render list items manually to fit pane width
-	var itemsStr strings.Builder
-	listHeight := m.paneHeight - 3
-	for i, post := range m.filteredPosts {
-		if i >= listHeight {
-			break
+	var content string
+	if len(m.filteredPosts) == 0 {
+		content = "No posts loaded"
+	} else {
+		var sb strings.Builder
+		for i, post := range m.filteredPosts {
+			if i >= m.paneHeight-3 {
+				break
+			}
+			
+			// Post title (truncated)
+			title := post.Title
+			if len(title) > m.paneWidth-2 {
+				title = title[:m.paneWidth-5] + "..."
+			}
+			
+			// Highlight selected
+			if i == m.selectedIndex {
+				title = selectedStyle.Render(title)
+			} else {
+				title = lipgloss.NewStyle().Foreground(colorGray).Render(title)
+			}
+			sb.WriteString(title)
+			sb.WriteString("\n")
+			
+			// Meta line
+			meta := fmt.Sprintf("u/%s ⬆%d 💬%d", post.Author, post.Score, post.Comments)
+			if len(meta) > m.paneWidth-2 {
+				meta = meta[:m.paneWidth-5] + "..."
+			}
+			sb.WriteString(lipgloss.NewStyle().Foreground(colorGold).Render(meta))
+			sb.WriteString("\n")
 		}
-		
-		item := PostItem{post}
-		line := item.Title()
-		desc := item.Description()
-		
-		// Highlight selected item
-		if i == m.selectedIndex {
-			line = selectedStyle.Render(line)
-			desc = selectedStyle.Render(desc)
-		}
-		
-		itemsStr.WriteString(fmt.Sprintf("%s\n%s\n", line, desc))
+		content = sb.String()
 	}
-	
-	content := lipgloss.NewStyle().
-		Foreground(colorGray).
-		Padding(0, 1).
-		Render(itemsStr.String())
 	
 	// Apply border based on focus
 	var borderStyle lipgloss.Style
@@ -601,90 +557,59 @@ func (m Model) renderPostListPane() string {
 		borderStyle = unfocusedBorderStyle
 	}
 	
-	pane := borderStyle.Render(
-		fmt.Sprintf("%s\n%s", paneTitle, content),
-	)
-	
-	return lipgloss.NewStyle().
+	pane := borderStyle.
 		Width(m.paneWidth).
 		Height(m.paneHeight).
-		Render(pane)
+		Padding(0, 1).
+		Render(title + "\n" + content)
+	
+	return pane
 }
 
 func (m Model) renderPostDetailPane() string {
 	title := "📄 Details"
 	if m.focusedPane == PanePostDetail {
-		title = "📄 Details (focused)"
+		title = " 📄 Details (focused) "
 	}
-	
-	paneTitle := lipgloss.NewStyle().
-		Foreground(colorOrange).
-		Bold(true).
-		Padding(0, 1).
-		Render(title)
 	
 	var content string
 	if m.selectedPost == nil {
-		content = lipgloss.NewStyle().
-			Foreground(colorGray).
-			Padding(1, 1).
-			Render("Select a post...")
+		content = "Select a post..."
 	} else {
 		post := m.selectedPost
-		
-		// Build post detail content
 		var sb strings.Builder
 		
 		// Title
-		title := post.Title
-		if len(title) > m.paneWidth-4 {
-			title = m.wrapText(title, m.paneWidth-4)
+		postTitle := post.Title
+		if len(postTitle) > m.paneWidth-2 {
+			postTitle = m.wrapText(postTitle, m.paneWidth-2)
 		}
-		sb.WriteString(lipgloss.NewStyle().
-			Foreground(colorWhite).
-			Bold(true).
-			Render(title))
+		sb.WriteString(postTitle)
 		sb.WriteString("\n\n")
 		
-		// Meta info
-		sb.WriteString(lipgloss.NewStyle().
-			Foreground(colorGold).
-			Render(fmt.Sprintf("u/%s\nr/%s\n⬆ %s | 💬 %s\n\n",
-				post.Author, post.SubName, m.formatNum(post.Score), m.formatNum(post.Comments))))
+		// Meta
+		sb.WriteString(fmt.Sprintf("u/%s\n", post.Author))
+		sb.WriteString(fmt.Sprintf("r/%s\n", post.SubName))
+		sb.WriteString(fmt.Sprintf("⬆ %s | 💬 %s\n\n", m.formatNum(post.Score), m.formatNum(post.Comments)))
 		
 		// Content
-		contentText := m.wrapText(post.SelfText, m.paneWidth-4)
-		if contentText != "" {
-			sb.WriteString(lipgloss.NewStyle().
-				Foreground(colorGray).
-				Render(contentText))
+		if post.SelfText != "" {
+			contentText := m.wrapText(post.SelfText, m.paneWidth-2)
+			sb.WriteString(contentText)
 			sb.WriteString("\n\n")
 		}
 		
-		// URL if exists
+		// URL
 		if post.URL != "" && !strings.HasPrefix(post.URL, "https://www.reddit.com") {
 			displayURL := post.URL
-			if len(displayURL) > m.paneWidth-8 {
-				displayURL = displayURL[:m.paneWidth-11] + "..."
+			if len(displayURL) > m.paneWidth-4 {
+				displayURL = displayURL[:m.paneWidth-7] + "..."
 			}
-			sb.WriteString(lipgloss.NewStyle().
-				Foreground(colorBlue).
-				Render(fmt.Sprintf("🔗 %s\n", displayURL)))
+			sb.WriteString("🔗 " + displayURL)
 		}
 		
 		content = sb.String()
-		if len(content) > (m.paneHeight - 3) * m.paneWidth {
-			m.maxDetailScroll = (len(content) / m.paneWidth) - m.paneHeight + 3
-			if m.maxDetailScroll < 0 {
-				m.maxDetailScroll = 0
-			}
-		}
 	}
-	
-	contentStyled := lipgloss.NewStyle().
-		Foreground(colorGray).
-		Padding(0, 1).
-		Render(content)
 	
 	// Apply border based on focus
 	var borderStyle lipgloss.Style
@@ -694,50 +619,33 @@ func (m Model) renderPostDetailPane() string {
 		borderStyle = unfocusedBorderStyle
 	}
 	
-	pane := borderStyle.Render(
-		fmt.Sprintf("%s\n%s", paneTitle, contentStyled),
-	)
-	
-	return lipgloss.NewStyle().
+	pane := borderStyle.
 		Width(m.paneWidth).
 		Height(m.paneHeight).
-		Render(pane)
+		Padding(0, 1).
+		Render(title + "\n" + content)
+	
+	return pane
 }
 
 func (m Model) renderCommentsPane() string {
 	title := "💬 Comments"
 	if m.focusedPane == PaneComments {
-		title = "💬 Comments (focused)"
+		title = " 💬 Comments (focused) "
 	}
-	
-	paneTitle := lipgloss.NewStyle().
-		Foreground(colorOrange).
-		Bold(true).
-		Padding(0, 1).
-		Render(title)
 	
 	var content string
 	if m.selectedPost == nil {
 		content = "Select a post..."
 	} else if !m.commentsLoaded {
-		content = fmt.Sprintf("%s Loading comments...", m.spinner.View())
+		content = "No comments loaded"
 	} else if len(m.comments) == 0 {
 		content = "No comments"
 	} else {
 		var sb strings.Builder
-		m.renderCommentsTree(&sb, m.comments, 0)
+		m.renderCommentsTree(&sb, m.comments, 0, m.paneWidth)
 		content = sb.String()
-		
-		// Update scroll max
-		lines := strings.Count(content, "\n")
-		m.maxCommentsScroll = max(0, lines-m.paneHeight+3)
 	}
-	
-	contentStyled := lipgloss.NewStyle().
-		Foreground(colorGray).
-		Padding(0, 1).
-		Height(m.paneHeight - 1).
-		Render(content)
 	
 	// Apply border based on focus
 	var borderStyle lipgloss.Style
@@ -747,37 +655,41 @@ func (m Model) renderCommentsPane() string {
 		borderStyle = unfocusedBorderStyle
 	}
 	
-	pane := borderStyle.Render(
-		fmt.Sprintf("%s\n%s", paneTitle, contentStyled),
-	)
-	
-	return lipgloss.NewStyle().
+	pane := borderStyle.
 		Width(m.paneWidth).
 		Height(m.paneHeight).
-		Render(pane)
+		Padding(0, 1).
+		Render(title + "\n" + content)
+	
+	return pane
 }
 
-func (m Model) renderCommentsTree(sb *strings.Builder, comments []*Comment, depth int) {
+func (m Model) renderCommentsTree(sb *strings.Builder, comments []*Comment, depth int, maxWidth int) {
 	for _, comment := range comments {
 		if comment == nil {
 			continue
 		}
 		
 		indent := strings.Repeat("  ", depth)
+		lineWidth := maxWidth - (depth * 2) - 2
+		if lineWidth < 10 {
+			lineWidth = 10
+		}
 		
 		// Author and score
-		sb.WriteString(fmt.Sprintf("%su/%s ⬆%d\n", indent, comment.Author, comment.Score))
+		author := fmt.Sprintf("%su/%s ⬆%d\n", indent, comment.Author, comment.Score)
+		sb.WriteString(author)
 		
 		// Body with wrapping
 		body := comment.Body
-		if len(body) > m.paneWidth-depth*2-10 {
-			body = body[:min(len(body), m.paneWidth-depth*2-13)] + "..."
+		if len(body) > lineWidth {
+			body = body[:lineWidth-3] + "..."
 		}
 		sb.WriteString(fmt.Sprintf("%s%s\n\n", indent, body))
 		
 		// Recursively render replies
 		if !comment.Collapsed && len(comment.Replies) > 0 {
-			m.renderCommentsTree(sb, comment.Replies, depth+1)
+			m.renderCommentsTree(sb, comment.Replies, depth+1, maxWidth)
 		}
 	}
 }
