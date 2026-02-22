@@ -34,9 +34,14 @@ The web app will automatically proxy API requests to localhost:3002.
 
 This starts:
 1. API Server (port 3002)
-2. Go TUI app using Bubble Tea
+2. Go TUI app with split-view interface
 
-Navigate with arrow keys or `j`/`k`, press `q` to quit.
+**Split-View Features:**
+- **Left sidebar:** Searchable post list with upvotes and comment count
+- **Right sidebar:** Detailed view of selected post with content and link
+- **Search:** Press `/` to enter search mode, filter by title/author, ESC to cancel
+- **Navigation:** Use `↑`/`↓` or `j`/`k` to move between posts, `ENTER` to select
+- **Controls:** `q` to quit
 
 ---
 
@@ -212,5 +217,6 @@ Latest commits:
 - ✅ Fix tea.Model return type
 - ✅ Add JavaScript API server
 - ✅ Add launch script
+- ✅ Implement split-view TUI with search, filtering, and detailed post view
 
 All changes committed! 🎉
