@@ -698,8 +698,8 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		case "pgup":
 			// Page up: scroll content
 			if m.showComments {
-				if m.commentsScrollY > 5 {
-					m.commentsScrollY -= 5
+				if m.commentsScrollY > 10 {
+					m.commentsScrollY -= 10
 				} else {
 					m.commentsScrollY = 0
 				}
@@ -714,8 +714,8 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		case "pgdn":
 			// Page down: scroll content
 			if m.showComments {
-				if m.commentsScrollY+5 < m.commentsMaxScroll {
-					m.commentsScrollY += 5
+				if m.commentsScrollY+10 < m.commentsMaxScroll {
+					m.commentsScrollY += 10
 				} else {
 					m.commentsScrollY = m.commentsMaxScroll
 				}
