@@ -353,7 +353,11 @@ type Model struct {
 	filteredPosts []RedditPostData
 	
 	// Comments
-	comments      []*Comment
+	comments         []*Comment
+	showComments     bool
+	commentsScrollY  int
+	commentsMaxScroll int
+	commentsLoading  bool
 	
 	// List component
 	list list.Model
@@ -610,44 +614,85 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 	if m.showDetails {
 		switch msg.String() {
 		case "esc", "tab":
+			if m.showComments {
+				m.showComments = false
+				m.commentsScrollY = 0
+				return m, nil, true
+			}
 			m.showDetails = false
 			m.detailScrollY = 0
 			return m, nil, true
 		case "up", "k":
-			if m.detailScrollY > 0 {
-				m.detailScrollY--
+			if m.showComments {
+				if m.commentsScrollY > 0 {
+					m.commentsScrollY--
+				}
+			} else {
+				if m.detailScrollY > 0 {
+					m.detailScrollY--
+				}
 			}
 			return m, nil, true
 		case "down", "j":
-			if m.detailScrollY < m.detailMaxScroll {
-				m.detailScrollY++
+			if m.showComments {
+				if m.commentsScrollY < m.commentsMaxScroll {
+					m.commentsScrollY++
+				}
+			} else {
+				if m.detailScrollY < m.detailMaxScroll {
+					m.detailScrollY++
+				}
 			}
 			return m, nil, true
 		case "pgup":
 			// Page up: scroll content
-			if m.detailScrollY > 10 {
-				m.detailScrollY -= 10
+			if m.showComments {
+				if m.commentsScrollY > 5 {
+					m.commentsScrollY -= 5
+				} else {
+					m.commentsScrollY = 0
+				}
 			} else {
-				m.detailScrollY = 0
+				if m.detailScrollY > 10 {
+					m.detailScrollY -= 10
+				} else {
+					m.detailScrollY = 0
+				}
 			}
 			return m, nil, true
 		case "pgdn":
 			// Page down: scroll content
-			if m.detailScrollY+10 < m.detailMaxScroll {
-				m.detailScrollY += 10
+			if m.showComments {
+				if m.commentsScrollY+5 < m.commentsMaxScroll {
+					m.commentsScrollY += 5
+				} else {
+					m.commentsScrollY = m.commentsMaxScroll
+				}
+			} else {
+				if m.detailScrollY+10 < m.detailMaxScroll {
+					m.detailScrollY += 10
+				} else {
+					m.detailScrollY = m.detailMaxScroll
+				}
+			}
+			return m, nil, true
+		case "home":
+			if m.showComments {
+				m.commentsScrollY = 0
+			} else {
+				m.detailScrollY = 0
+			}
+			return m, nil, true
+		case "end":
+			if m.showComments {
+				m.commentsScrollY = m.commentsMaxScroll
 			} else {
 				m.detailScrollY = m.detailMaxScroll
 			}
 			return m, nil, true
-		case "home":
-			m.detailScrollY = 0
-			return m, nil, true
-		case "end":
-			m.detailScrollY = m.detailMaxScroll
-			return m, nil, true
 		case "left", "h":
-			// Left/h: previous post
-			if len(m.filteredPosts) > 0 {
+			// Left/h: previous post (disabled when comments open)
+			if !m.showComments && len(m.filteredPosts) > 0 {
 				idx := m.list.Index()
 				if idx > 0 {
 					m.list.CursorUp()
@@ -656,8 +701,8 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 			}
 			return m, nil, true
 		case "right", "l":
-			// Right/l: next post
-			if len(m.filteredPosts) > 0 {
+			// Right/l: next post (disabled when comments open)
+			if !m.showComments && len(m.filteredPosts) > 0 {
 				idx := m.list.Index()
 				if idx < len(m.filteredPosts)-1 {
 					m.list.CursorDown()
@@ -705,13 +750,25 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		m.loading = true
 		m.showDetails = false
 		return m, m.loadPosts(m.subreddit), true
+	case "c":
+		if m.showComments {
+			// Close comments panel
+			m.showComments = false
+			m.commentsScrollY = 0
+		} else if m.showDetails && len(m.filteredPosts) > 0 {
+			// Open comments panel
+			m.showComments = true
+			m.commentsScrollY = 0
+			m.commentsLoading = true
+			post := m.filteredPosts[m.list.Index()]
+			return m, m.loadComments(m.subreddit, post.ID), true
+		}
+		return m, nil, true
 	case "enter":
 		if len(m.filteredPosts) > 0 && m.list.Index() < len(m.filteredPosts) {
 			m.showDetails = true
 			m.detailScrollY = 0
-			// Comments disabled for now - API needs fixing
-			// post := m.filteredPosts[m.list.Index()]
-			// return m, m.loadComments(m.subreddit, post.ID), true
+			m.showComments = false
 		}
 		return m, nil, true
 	}
@@ -829,14 +886,79 @@ func (m Model) renderWithDetails() string {
 	m.list.SetSize(m.windowWidth-2, listHeight)
 	listView := m.list.View()
 	
-	// Details section
-	detailsView := m.renderDetailsSection(detailsHeight)
+	// Details section or comments
+	var contentView string
+	if m.showComments {
+		contentView = m.renderCommentsPanel(detailsHeight)
+	} else {
+		contentView = m.renderDetailsSection(detailsHeight)
+	}
 	
 	separator := lipgloss.NewStyle().
 		Foreground(colorOrange).
 		Render(strings.Repeat("─", m.windowWidth-2))
 	
-	return fmt.Sprintf("%s\n%s\n%s", listView, separator, detailsView)
+	return fmt.Sprintf("%s\n%s\n%s", listView, separator, contentView)
+}
+
+func (m Model) renderCommentsPanel(height int) string {
+	if len(m.comments) == 0 {
+		if m.commentsLoading {
+			return lipgloss.NewStyle().
+				Foreground(colorGray).
+				Padding(1, 1).
+				Height(height).
+				Render("💬 Loading comments...")
+		}
+		return lipgloss.NewStyle().
+			Foreground(colorGray).
+			Padding(1, 1).
+			Height(height).
+			Render("💬 No comments found")
+	}
+	
+	var sb strings.Builder
+	sb.WriteString(focusedStyle.Render("💬 Comments\n\n"))
+	
+	// Build comment lines
+	var commentLines []string
+	for _, comment := range m.comments {
+		// Author and score
+		authorLine := lipgloss.NewStyle().Foreground(colorGold).Render(
+			fmt.Sprintf("👤 u/%s  •  ⬆ %s", comment.Author, formatNum(comment.Score)))
+		commentLines = append(commentLines, authorLine)
+		
+		// Comment body with wrapping
+		if comment.Body != "" {
+			wrapped := wrapText(comment.Body, m.windowWidth-6)
+			wrappedLines := strings.Split(wrapped, "\n")
+			for _, line := range wrappedLines {
+				commentLines = append(commentLines, "  "+line)
+			}
+		}
+		commentLines = append(commentLines, "") // Blank line between comments
+	}
+	
+	// Apply scrolling
+	startLine := m.commentsScrollY
+	endLine := startLine + height - 4
+	if endLine > len(commentLines) {
+		endLine = len(commentLines)
+	}
+	
+	// Calculate max scroll
+	m.commentsMaxScroll = max(0, len(commentLines)-height+4)
+	
+	if startLine < len(commentLines) {
+		visibleLines := commentLines[startLine:endLine]
+		sb.WriteString(strings.Join(visibleLines, "\n"))
+	}
+	
+	return lipgloss.NewStyle().
+		Foreground(colorGray).
+		Padding(0, 1).
+		Height(height).
+		Render(sb.String())
 }
 
 func (m Model) renderDetailsSection(height int) string {
