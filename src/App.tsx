@@ -117,6 +117,7 @@ export default function App() {
   const [suggestions, setSuggestions] = useState<RedditPost[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [suggestionIndex, setSuggestionIndex] = useState(-1)
+  const [isRedditSearch, setIsRedditSearch] = useState(false)
   
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -194,19 +195,26 @@ export default function App() {
 
   const handleSearchSubmit = () => {
     if (search.trim()) {
-      setSelected({ 
-        kind: 'search',
-        data: { 
-          id: 'search',
-          permalink: `/search?q=${encodeURIComponent(search)}`,
-          title: '',
-          subreddit: '',
-          author: '',
-          created_utc: 0,
-          score: 0,
-          num_comments: 0
-        }
-      })
+      // Search Reddit across all subreddits
+      setIsRedditSearch(true)
+      setLoading(true)
+      setError(null)
+      
+      const query = encodeURIComponent(search.trim())
+      const searchUrl = `${API_BASE}/search.json?q=${query}&type=link&limit=50`
+      
+      fetch(searchUrl)
+        .then(res => res.json())
+        .then(data => {
+          const items = data.data.children as RedditPost[]
+          setPosts(items)
+          setSub(`search: "${search}"`)
+          setLoading(false)
+        })
+        .catch(err => {
+          setError(err instanceof Error ? err.message : 'Search failed')
+          setLoading(false)
+        })
     }
   }
 
@@ -359,7 +367,7 @@ export default function App() {
           <input
             ref={filterRef}
             className="filter-input"
-            placeholder="Filter posts... (Enter to search)"
+            placeholder={isRedditSearch ? "Search Reddit..." : "Filter posts... (Enter to search Reddit)"}
             value={search}
             onChange={e => setSearch(e.target.value)}
             onFocus={() => setFocused('filter')}
@@ -368,13 +376,16 @@ export default function App() {
         
         <div className="posts-list" ref={listRef} onScroll={() => {}} onKeyDown={handleKeyDown} tabIndex={0}>
           {loading && posts.length === 0 && <div className="loading">Loading...</div>}
-          {error && posts.length === 0 && <div className="error">{error}</div>}
+          {error && posts.length === 0 && <div className="error">⚠️ {error}</div>}
           {filteredPosts.map((p, i) => (
             <PostItem key={p.data.id} post={p} active={selected?.data?.id === p.data.id || i === selectedIndex}
               onClick={() => setSelected(p)} />
           ))}
-          {search && filteredPosts.length === 0 && posts.length > 0 && (
-            <div className="empty">No matches - Enter to search Reddit</div>
+          {search && !isRedditSearch && filteredPosts.length === 0 && posts.length > 0 && (
+            <div className="empty">No local matches - press Enter to search Reddit</div>
+          )}
+          {isRedditSearch && filteredPosts.length === 0 && posts.length === 0 && (
+            <div className="empty">No results found</div>
           )}
           {loading && posts.length > 0 && <div className="loading">Loading more...</div>}
         </div>
