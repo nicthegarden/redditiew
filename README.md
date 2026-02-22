@@ -43,11 +43,63 @@ Then:
 | `Enter` | Open selected post / search Reddit |
 | `Ctrl+F` | Focus iframe for page search |
 
+## Configuration
+
+RedditView supports a `config.json` file in the root directory for easy customization of both the TUI and Web interfaces.
+
+### Setup
+
+Create a `config.json` file in the project root:
+
+```json
+{
+  "tui": {
+    "default_subreddit": "golang",
+    "posts_per_page": 50,
+    "list_height": 12,
+    "max_title_length": 80
+  },
+  "web": {
+    "default_subreddit": "sysadmin",
+    "posts_per_page": 20,
+    "theme": "dark"
+  },
+  "api": {
+    "base_url": "http://localhost:3002/api",
+    "timeout_seconds": 10
+  }
+}
+```
+
+### Configuration Options
+
+#### TUI Settings (`tui`)
+- **`default_subreddit`** (string): Subreddit loaded on startup (default: `"golang"`)
+- **`posts_per_page`** (number): Number of posts to fetch (default: `50`)
+- **`list_height`** (number): Maximum lines shown in list view (default: `12`)
+- **`max_title_length`** (number): Truncate titles longer than this (default: `80`)
+
+#### Web Settings (`web`)
+- **`default_subreddit`** (string): Initial subreddit in web browser (default: `"sysadmin"`)
+- **`posts_per_page`** (number): Posts per page in web interface (default: `20`)
+- **`theme`** (string): Default theme: `"dark"` or `"light"` (default: `"dark"`)
+
+#### API Settings (`api`)
+- **`base_url`** (string): Backend API endpoint (default: `"http://localhost:3002/api"`)
+- **`timeout_seconds`** (number): Request timeout in seconds (default: `10`)
+
+### Usage
+
+- **TUI**: Loads config from `../../config.json` relative to the TUI binary directory
+- **Web**: Loads config from `/config.json` (served by HTTP)
+- If config file is missing, sensible defaults are used
+
 ## Architecture
 
 **Frontend:** React 19 + TypeScript + Vite  
 **Backend:** Node.js proxy server (CORS bypass + caching)  
 **Storage:** localStorage (1h per subreddit) + in-memory proxy cache
+**TUI:** Go + Bubble Tea (Terminal UI)
 
 ## Recent Updates
 

@@ -215,6 +215,43 @@ node api-server.js
 # Post automatically expands to show full details
 ```
 
+## ⚙️ Configuration
+
+The TUI uses `config.json` in the root directory for customization. Create the file to customize behavior:
+
+```json
+{
+  "tui": {
+    "default_subreddit": "golang",
+    "posts_per_page": 50,
+    "list_height": 12,
+    "max_title_length": 80
+  },
+  "api": {
+    "base_url": "http://localhost:3002/api",
+    "timeout_seconds": 10
+  }
+}
+```
+
+### TUI Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `default_subreddit` | `"golang"` | Subreddit loaded on startup |
+| `posts_per_page` | `50` | Number of posts to fetch from API |
+| `list_height` | `12` | Maximum visible items in list view |
+| `max_title_length` | `80` | Truncate post titles longer than this |
+
+### API Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `base_url` | `"http://localhost:3002/api"` | Backend API endpoint |
+| `timeout_seconds` | `10` | Request timeout |
+
+**Note:** If `config.json` is missing, sensible defaults are used automatically.
+
 ## 🐛 Troubleshooting
 
 ### API connection error
