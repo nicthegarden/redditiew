@@ -1,13 +1,19 @@
 {
-  "name": "redditview",
+  "name": "redditview-monorepo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/web"
+  ],
   "scripts": {
-    "dev": "concurrently \"node proxy.js\" \"vite\"",
+    "dev": "vite",
     "dev:vite": "vite",
     "dev:proxy": "node proxy.js",
-    "build": "vite build",
+    "dev:api": "node --loader ts-node/esm api-server.ts",
+    "dev:core": "npm run build --workspace=@redditview/core -- --watch",
+    "build": "npm run build --workspace=@redditview/core && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
