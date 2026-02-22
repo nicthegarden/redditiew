@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -89,7 +90,7 @@ func loadConfig() error {
 		appConfig = AppConfig{}
 		appConfig.TUI.DefaultSubreddit = "golang"
 		appConfig.TUI.PostsPerPage = 50
-		appConfig.TUI.ListHeight = 12
+		appConfig.TUI.ListHeight = 10
 		appConfig.TUI.MaxTitleLength = 80
 		appConfig.API.BaseURL = "http://localhost:3002/api"
 		appConfig.API.TimeoutSeconds = 10
@@ -109,7 +110,7 @@ func loadConfig() error {
 		appConfig.TUI.PostsPerPage = 50
 	}
 	if appConfig.TUI.ListHeight == 0 {
-		appConfig.TUI.ListHeight = 12
+		appConfig.TUI.ListHeight = 10
 	}
 	if appConfig.TUI.MaxTitleLength == 0 {
 		appConfig.TUI.MaxTitleLength = 80
@@ -214,6 +215,39 @@ func (c *APIClient) FetchPosts(subreddit string) ([]RedditPostData, error) {
 	return posts, nil
 }
 
+// SearchPosts performs a Reddit-wide search
+func (c *APIClient) SearchPosts(query string) ([]RedditPostData, error) {
+	if query == "" {
+		return []RedditPostData{}, nil
+	}
+	
+	searchURL := fmt.Sprintf("%s/search.json?q=%s&type=link&limit=50", 
+		c.baseURL, 
+		url.QueryEscape(query))
+	
+	resp, err := http.Get(searchURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	data, _ := io.ReadAll(resp.Body)
+
+	var result RedditResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse search results: %w", err)
+	}
+
+	posts := make([]RedditPostData, 0, len(result.Data.Children))
+	for _, post := range result.Data.Children {
+		if post.Kind == "t3" {
+			posts = append(posts, post.Data)
+		}
+	}
+
+	return posts, nil
+}
+
 // ============= Main Model =============
 
 type Model struct {
@@ -290,6 +324,12 @@ type postsLoadedMsg struct {
 	error error
 }
 
+type searchResultsMsg struct {
+	posts  []RedditPostData
+	query  string
+	error  error
+}
+
 // ============= Commands =============
 
 func (m Model) loadPosts(subreddit string) tea.Cmd {
@@ -299,6 +339,19 @@ func (m Model) loadPosts(subreddit string) tea.Cmd {
 			return postsLoadedMsg{nil, err}
 		}
 		return postsLoadedMsg{posts, nil}
+	}
+}
+
+func (m Model) searchReddit(query string) tea.Cmd {
+	return func() tea.Msg {
+		if query == "" {
+			return searchResultsMsg{[]RedditPostData{}, "", nil}
+		}
+		posts, err := m.client.SearchPosts(query)
+		if err != nil {
+			return searchResultsMsg{nil, query, err}
+		}
+		return searchResultsMsg{posts, query, nil}
 	}
 }
 
@@ -336,6 +389,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.showDetails = false
 		m.detailScrollY = 0
 		return m, nil
+	
+	case searchResultsMsg:
+		if msg.error != nil {
+			m.error = msg.error.Error()
+		} else {
+			m.posts = msg.posts
+			m.filteredPosts = msg.posts
+			m.updateListItems()
+		}
+		m.loading = false
+		m.showDetails = false
+		m.detailScrollY = 0
+		return m, nil
 		
 	case tea.WindowSizeMsg:
 		m.windowWidth = msg.Width
@@ -358,15 +424,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) updateListSize() {
 	if m.showDetails {
-		// Show both list and details: list gets 8 items max
-		listHeight := min(8, m.windowHeight/6)
+		// Show both list and details: list gets 6 items max
+		listHeight := min(6, m.windowHeight/6)
 		if listHeight < 3 {
 			listHeight = 3
 		}
 		m.list.SetSize(m.windowWidth-2, listHeight)
 	} else {
-		// Show full list: limit to 12 items for better readability
-		listHeight := min(12, m.windowHeight-8)
+		// Show full list: limit to 10 items for better readability
+		listHeight := min(10, m.windowHeight-8)
 		m.list.SetSize(m.windowWidth-2, listHeight)
 	}
 }
@@ -406,11 +472,16 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		case "enter":
 			m.searching = false
 			query := m.searchInput.Value()
-			m.filterPosts(query)
+			if query != "" {
+				// Perform Reddit-wide search
+				m.loading = true
+				return m, m.searchReddit(query), true
+			}
 			return m, nil, true
 		}
 		var cmd tea.Cmd
 		m.searchInput, cmd = m.searchInput.Update(msg)
+		// Live filter as user types
 		m.filterPosts(m.searchInput.Value())
 		return m, cmd, true
 	}
@@ -432,16 +503,72 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 				m.detailScrollY++
 			}
 			return m, nil, true
+		case "pgup":
+			// Page up: scroll content
+			if m.detailScrollY > 10 {
+				m.detailScrollY -= 10
+			} else {
+				m.detailScrollY = 0
+			}
+			return m, nil, true
+		case "pgdn":
+			// Page down: scroll content
+			if m.detailScrollY+10 < m.detailMaxScroll {
+				m.detailScrollY += 10
+			} else {
+				m.detailScrollY = m.detailMaxScroll
+			}
+			return m, nil, true
 		case "home":
 			m.detailScrollY = 0
 			return m, nil, true
 		case "end":
 			m.detailScrollY = m.detailMaxScroll
 			return m, nil, true
+		case "left", "h":
+			// Left/h: previous post
+			if len(m.filteredPosts) > 0 {
+				idx := m.list.Index()
+				if idx > 0 {
+					m.list.CursorUp()
+					m.detailScrollY = 0
+				}
+			}
+			return m, nil, true
+		case "right", "l":
+			// Right/l: next post
+			if len(m.filteredPosts) > 0 {
+				idx := m.list.Index()
+				if idx < len(m.filteredPosts)-1 {
+					m.list.CursorDown()
+					m.detailScrollY = 0
+				}
+			}
+			return m, nil, true
 		}
 	}
 	
-	// Global shortcuts
+	// Global shortcuts (also support left/right to navigate in list view)
+	switch msg.String() {
+	case "left", "h":
+		if !m.showDetails && len(m.filteredPosts) > 0 {
+			idx := m.list.Index()
+			if idx > 0 {
+				m.list.CursorUp()
+			}
+			return m, nil, true
+		}
+	case "right", "l":
+		if !m.showDetails && len(m.filteredPosts) > 0 {
+			idx := m.list.Index()
+			if idx < len(m.filteredPosts)-1 {
+				m.list.CursorDown()
+			}
+			return m, nil, true
+		}
+	}
+	
+	// Global shortcuts (remaining)
 	switch msg.String() {
 	case "ctrl+c", "q":
 		return m, tea.Quit, true
