@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/spinner"
 )
@@ -27,6 +28,7 @@ var (
 	colorWhite = lipgloss.Color("#FFFFFF")
 	colorGray = lipgloss.Color("#CCCCCC")
 	colorDarkGray = lipgloss.Color("#333333")
+	colorBlack = lipgloss.Color("#000000")
 	colorBlue = lipgloss.Color("#87CEEB")
 	colorRed = lipgloss.Color("#FF0000")
 	
@@ -39,21 +41,21 @@ var (
 	
 	selectedStyle = lipgloss.NewStyle().
 		Background(colorOrangeDark).
-		Foreground(colorWhite)
+		Foreground(colorWhite).
+		Bold(true)
 	
 	footerStyle = lipgloss.NewStyle().
 		Background(colorDarkGray).
 		Foreground(colorWhite).
 		Padding(0, 1)
 	
+	focusedStyle = lipgloss.NewStyle().
+		Foreground(colorOrange).
+		Bold(true)
+	
 	errorStyle = lipgloss.NewStyle().
 		Foreground(colorRed).
 		Bold(true)
-	
-	sectionTitleStyle = lipgloss.NewStyle().
-		Foreground(colorOrange).
-		Bold(true).
-		Padding(1, 0)
 )
 
 // ============= Data Models =============
@@ -92,6 +94,24 @@ type Comment struct {
 	Depth     int
 	Replies   []*Comment
 	Collapsed bool
+}
+
+// ============= List Item Implementation =============
+
+type PostItem struct {
+	post RedditPostData
+}
+
+func (p PostItem) FilterValue() string {
+	return strings.ToLower(p.post.Title + " " + p.post.Author)
+}
+
+func (p PostItem) Title() string {
+	return p.post.Title
+}
+
+func (p PostItem) Description() string {
+	return fmt.Sprintf("u/%s  •  ⬆ %s  •  💬 %s", p.post.Author, formatNum(p.post.Score), formatNum(p.post.Comments))
 }
 
 // ============= API Client =============
@@ -134,7 +154,9 @@ type Model struct {
 	// Post Management
 	posts         []RedditPostData
 	filteredPosts []RedditPostData
-	selectedIndex int
+	
+	// List component
+	list list.Model
 	
 	// UI Components
 	searchInput    textinput.Model
@@ -147,10 +169,11 @@ type Model struct {
 	error         string
 	searching     bool
 	selectingSub  bool
+	showDetails   bool
 	
-	// Scroll
-	scrollY      int
-	scrollHeight int
+	// Detail view scroll
+	detailScrollY int
+	detailMaxScroll int
 	
 	// Layout
 	windowWidth  int
@@ -172,15 +195,23 @@ func initialModel() Model {
 	subInput.Placeholder = "Enter subreddit (e.g., golang, rust)..."
 	subInput.CharLimit = 50
 	
+	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+	l.Title = ""
+	l.SetFilteringEnabled(false)
+	l.SetShowFilter(false)
+	l.DisableQuitKeybindings()
+	
 	m := Model{
 		client:         NewAPIClient(),
 		subreddit:      "golang",
 		spinner:        s,
 		searchInput:    searchInput,
 		subredditInput: subInput,
+		list:           l,
 		loading:        true,
 		windowWidth:    120,
 		windowHeight:   40,
+		showDetails:    false,
 	}
 	
 	return m
@@ -228,15 +259,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.posts = msg.posts
 			m.filteredPosts = msg.posts
-			m.selectedIndex = 0
+			m.updateListItems()
 		}
 		m.loading = false
+		m.showDetails = false
+		m.detailScrollY = 0
 		return m, nil
 		
 	case tea.WindowSizeMsg:
 		m.windowWidth = msg.Width
 		m.windowHeight = msg.Height
-		m.scrollHeight = m.windowHeight - 8
+		m.updateListSize()
 		return m, nil
 		
 	case spinner.TickMsg:
@@ -244,7 +277,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	
-	return m, nil
+	// List update
+	if !m.showDetails {
+		m.list, cmd = m.list.Update(msg)
+	}
+	
+	return m, cmd
+}
+
+func (m *Model) updateListSize() {
+	if m.showDetails {
+		// Show both list and details
+		listHeight := (m.windowHeight - 8) / 2
+		m.list.SetSize(m.windowWidth-2, listHeight)
+	} else {
+		// Show full list
+		m.list.SetSize(m.windowWidth-2, m.windowHeight-8)
+	}
 }
 
 func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
@@ -262,7 +311,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 				m.subredditInput.Reset()
 				m.selectingSub = false
 				m.loading = true
-				m.scrollY = 0
+				m.showDetails = false
 				return m, m.loadPosts(newSub)
 			}
 		}
@@ -278,19 +327,43 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 			m.searching = false
 			m.searchInput.Reset()
 			m.filterPosts("")
-			m.scrollY = 0
 			return m, nil
 		case "enter":
 			m.searching = false
 			query := m.searchInput.Value()
 			m.filterPosts(query)
-			m.scrollY = 0
 			return m, nil
 		}
 		var cmd tea.Cmd
 		m.searchInput, cmd = m.searchInput.Update(msg)
 		m.filterPosts(m.searchInput.Value())
 		return m, cmd
+	}
+	
+	// Detail view navigation
+	if m.showDetails {
+		switch msg.String() {
+		case "esc", "tab":
+			m.showDetails = false
+			m.detailScrollY = 0
+			return m, nil
+		case "up", "k":
+			if m.detailScrollY > 0 {
+				m.detailScrollY--
+			}
+			return m, nil
+		case "down", "j":
+			if m.detailScrollY < m.detailMaxScroll {
+				m.detailScrollY++
+			}
+			return m, nil
+		case "home":
+			m.detailScrollY = 0
+			return m, nil
+		case "end":
+			m.detailScrollY = m.detailMaxScroll
+			return m, nil
+		}
 	}
 	
 	// Global shortcuts
@@ -308,26 +381,14 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 		return m, nil
 	case "f5":
 		m.loading = true
-		m.scrollY = 0
+		m.showDetails = false
 		return m, m.loadPosts(m.subreddit)
-	}
-	
-	// Navigation
-	switch msg.String() {
-	case "up", "k":
-		if m.selectedIndex > 0 {
-			m.selectedIndex--
+	case "enter":
+		if len(m.filteredPosts) > 0 && m.list.Index() < len(m.filteredPosts) {
+			m.showDetails = true
+			m.detailScrollY = 0
 		}
-	case "down", "j":
-		if m.selectedIndex < len(m.filteredPosts)-1 {
-			m.selectedIndex++
-		}
-	case "home":
-		m.selectedIndex = 0
-		m.scrollY = 0
-	case "end":
-		m.selectedIndex = len(m.filteredPosts) - 1
-		m.scrollY = 0
+		return m, nil
 	}
 	
 	return m, nil
@@ -346,7 +407,15 @@ func (m *Model) filterPosts(query string) {
 			}
 		}
 	}
-	m.selectedIndex = 0
+	m.updateListItems()
+}
+
+func (m *Model) updateListItems() {
+	items := make([]list.Item, len(m.filteredPosts))
+	for i, post := range m.filteredPosts {
+		items[i] = PostItem{post}
+	}
+	m.list.SetItems(items)
 }
 
 // ============= Rendering =============
@@ -376,7 +445,7 @@ func (m Model) renderLoading() string {
 
 func (m Model) renderMain() string {
 	// Header
-	header := headerStyle.Render(fmt.Sprintf("  🔥 r/%s  Posts: %d", m.subreddit, len(m.filteredPosts)))
+	header := headerStyle.Render(fmt.Sprintf("  🔥 r/%s  %d posts", m.subreddit, len(m.filteredPosts)))
 	
 	// Info bar
 	var infoBar string
@@ -391,15 +460,16 @@ func (m Model) renderMain() string {
 			Padding(0, 1).
 			Render(fmt.Sprintf("📍 Subreddit: %s", m.subredditInput.View()))
 	} else {
-		infoBar = lipgloss.NewStyle().
-			Foreground(colorGreen).
-			Padding(0, 1).
-			Render(fmt.Sprintf("▼/▲ (j/k): navigate  Ctrl+F: search  Ctrl+R: subreddit  F5: refresh  q: quit"))
+		infoBar = m.renderInfoBar()
 	}
 	
-	// Content area
-	contentHeight := m.windowHeight - 4
-	content := m.renderContent(contentHeight)
+	// Content
+	var content string
+	if m.showDetails && len(m.filteredPosts) > 0 {
+		content = m.renderWithDetails()
+	} else {
+		content = m.renderListOnly()
+	}
 	
 	// Footer
 	footer := m.renderFooter()
@@ -407,136 +477,112 @@ func (m Model) renderMain() string {
 	return fmt.Sprintf("%s\n%s\n%s\n%s", header, infoBar, content, footer)
 }
 
-func (m Model) renderContent(height int) string {
-	if len(m.filteredPosts) == 0 {
+func (m Model) renderInfoBar() string {
+	if m.showDetails {
 		return lipgloss.NewStyle().
-			Foreground(colorGray).
-			Padding(2, 2).
-			Render("No posts found. Try a different search or subreddit.")
+			Foreground(colorGreen).
+			Padding(0, 1).
+			Render("▲/▼ (k/j): scroll  Home/End: jump  Esc/Tab: back  Ctrl+F: search  F5: refresh  q: quit")
 	}
-	
-	var sb strings.Builder
-	
-	// Render all posts with selected one expanded
-	for i, post := range m.filteredPosts {
-		if m.selectedIndex == i {
-			sb.WriteString(m.renderSelectedPost(post, m.windowWidth-4))
-		} else {
-			sb.WriteString(m.renderPostListItem(post, i == m.selectedIndex))
-		}
-		sb.WriteString("\n")
-	}
-	
-	content := sb.String()
-	
-	// Apply styling
-	styled := lipgloss.NewStyle().
-		Foreground(colorGray).
+	return lipgloss.NewStyle().
+		Foreground(colorGreen).
 		Padding(0, 1).
-		Render(content)
-	
-	return styled
+		Render("▲/▼ (k/j): navigate  Enter: view  Ctrl+F: search  Ctrl+R: subreddit  F5: refresh  q: quit")
 }
 
-func (m Model) renderPostListItem(post RedditPostData, selected bool) string {
-	var sb strings.Builder
-	
-	// Indicator
-	indicator := "  "
-	if selected {
-		indicator = "▶ "
-	}
-	
-	// Title (truncated)
-	title := post.Title
-	if len(title) > m.windowWidth-10 {
-		title = title[:m.windowWidth-13] + "..."
-	}
-	
-	if selected {
-		title = selectedStyle.Render(title)
-	}
-	
-	sb.WriteString(indicator)
-	sb.WriteString(title)
-	sb.WriteString("\n")
-	
-	// Meta line
-	meta := fmt.Sprintf("  u/%s  •  ⬆ %s  •  💬 %s", 
-		post.Author, m.formatNum(post.Score), m.formatNum(post.Comments))
-	sb.WriteString(lipgloss.NewStyle().Foreground(colorGold).Render(meta))
-	sb.WriteString("\n")
-	
-	return sb.String()
+func (m Model) renderListOnly() string {
+	m.updateListSize()
+	return m.list.View()
 }
 
-func (m Model) renderSelectedPost(post RedditPostData, width int) string {
-	var sb strings.Builder
+func (m Model) renderWithDetails() string {
+	// Split view: list on top, details on bottom
+	listHeight := (m.windowHeight - 8) / 2
+	detailsHeight := m.windowHeight - 8 - listHeight - 1
 	
-	// Indicator
-	sb.WriteString("▼ ")
+	m.list.SetSize(m.windowWidth-2, listHeight)
+	listView := m.list.View()
+	
+	// Details section
+	detailsView := m.renderDetailsSection(detailsHeight)
+	
+	separator := lipgloss.NewStyle().
+		Foreground(colorOrange).
+		Render(strings.Repeat("─", m.windowWidth-2))
+	
+	return fmt.Sprintf("%s\n%s\n%s", listView, separator, detailsView)
+}
+
+func (m Model) renderDetailsSection(height int) string {
+	if m.list.Index() >= len(m.filteredPosts) {
+		return ""
+	}
+	
+	post := m.filteredPosts[m.list.Index()]
+	
+	var sb strings.Builder
 	
 	// Title
-	sb.WriteString(selectedStyle.Render(post.Title))
-	sb.WriteString("\n\n")
+	sb.WriteString(focusedStyle.Render(fmt.Sprintf("📄 %s\n", post.Title)))
 	
-	// Meta information
-	metaStr := fmt.Sprintf("👤 u/%s  •  r/%s  •  ⬆ %s  •  💬 %s",
-		post.Author, post.SubName, m.formatNum(post.Score), m.formatNum(post.Comments))
-	sb.WriteString(lipgloss.NewStyle().Foreground(colorGold).Render(metaStr))
-	sb.WriteString("\n")
+	// Meta
+	sb.WriteString(lipgloss.NewStyle().Foreground(colorGold).Render(
+		fmt.Sprintf("👤 u/%s  •  r/%s  •  ⬆ %s  •  💬 %s\n\n",
+			post.Author, post.SubName, formatNum(post.Score), formatNum(post.Comments))))
 	
-	// Separator
-	sb.WriteString(strings.Repeat("─", min(width, 80)))
-	sb.WriteString("\n\n")
-	
-	// Post content
+	// Content
 	if post.SelfText != "" {
-		content := m.wrapText(post.SelfText, width-2)
-		sb.WriteString(content)
-		sb.WriteString("\n\n")
+		content := wrapText(post.SelfText, m.windowWidth-4)
+		lines := strings.Split(content, "\n")
+		
+		// Apply scrolling
+		startLine := m.detailScrollY
+		endLine := startLine + height - 3
+		if endLine > len(lines) {
+			endLine = len(lines)
+		}
+		
+		// Calculate max scroll
+		m.detailMaxScroll = max(0, len(lines)-height+3)
+		
+		if startLine < len(lines) {
+			visibleLines := lines[startLine:endLine]
+			sb.WriteString(strings.Join(visibleLines, "\n"))
+		}
 	}
 	
 	// URL
 	if post.URL != "" && !strings.HasPrefix(post.URL, "https://www.reddit.com") {
 		displayURL := post.URL
-		if len(displayURL) > width-4 {
-			displayURL = displayURL[:width-7] + "..."
+		if len(displayURL) > m.windowWidth-10 {
+			displayURL = displayURL[:m.windowWidth-13] + "..."
 		}
-		sb.WriteString(lipgloss.NewStyle().Foreground(colorBlue).Render("🔗 " + displayURL))
-		sb.WriteString("\n\n")
+		sb.WriteString(lipgloss.NewStyle().Foreground(colorBlue).Render("\n🔗 " + displayURL))
 	}
 	
-	// Separator before comments
-	sb.WriteString(strings.Repeat("─", min(width, 80)))
-	sb.WriteString("\n")
-	sb.WriteString(sectionTitleStyle.Render("💬 Top Comments"))
-	sb.WriteString("\n")
-	
-	// Placeholder for comments (TODO: load actual comments)
-	sb.WriteString(lipgloss.NewStyle().Foreground(colorGray).Italic(true).Render(
-		"(Comments loading would go here)"))
-	sb.WriteString("\n")
-	
-	return sb.String()
+	return lipgloss.NewStyle().
+		Foreground(colorGray).
+		Padding(0, 1).
+		Height(height).
+		Render(sb.String())
 }
 
 func (m Model) renderFooter() string {
-	selectedNum := m.selectedIndex + 1
-	totalNum := len(m.filteredPosts)
-	
-	statusStr := fmt.Sprintf("%d/%d", selectedNum, totalNum)
-	if len(m.filteredPosts) == 0 {
-		statusStr = "0/0"
+	if m.showDetails {
+		return footerStyle.Render("Esc/Tab: back to list  •  Ctrl+F: search  •  F5: refresh  •  q: quit")
 	}
 	
-	footerText := fmt.Sprintf("Post %s  •  Ctrl+F: search  •  Ctrl+R: subreddit  •  F5: refresh  •  q: quit", statusStr)
-	return footerStyle.Render(footerText)
+	status := "no posts"
+	if len(m.filteredPosts) > 0 {
+		status = fmt.Sprintf("%d/%d", m.list.Index()+1, len(m.filteredPosts))
+	}
+	
+	return footerStyle.Render(fmt.Sprintf("Post %s  •  Enter: view details  •  Ctrl+F: search  •  F5: refresh  •  q: quit", status))
 }
 
 // ============= Utilities =============
 
-func (m Model) wrapText(text string, width int) string {
+func wrapText(text string, width int) string {
 	if width <= 0 || text == "" {
 		return ""
 	}
@@ -565,7 +611,7 @@ func (m Model) wrapText(text string, width int) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m Model) formatNum(n int) string {
+func formatNum(n int) string {
 	if n >= 1000000 {
 		return fmt.Sprintf("%.1fM", float64(n)/1000000)
 	}
@@ -577,6 +623,13 @@ func (m Model) formatNum(n int) string {
 
 func min(a, b int) int {
 	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
 		return a
 	}
 	return b
