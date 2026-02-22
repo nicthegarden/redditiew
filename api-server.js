@@ -99,9 +99,9 @@ const server = http.createServer(async (req, res) => {
   console.log(`${req.method} ${pathname}`)
 
   try {
-    // Parse subreddit from /api/r/:subreddit
-    const subredditMatch = pathname.match(/^\/api\/r\/([^/]+)(?:\/|$)/)
-    if (subredditMatch && !pathname.includes('.json')) {
+    // Parse subreddit from /api/r/:subreddit or /api/r/:subreddit.json
+    const subredditMatch = pathname.match(/^\/api\/r\/([^/.]+)(\.json)?(?:\/|$)/)
+    if (subredditMatch) {
       const subreddit = subredditMatch[1]
       const limit = parsedUrl.query.limit || '50'
       const after = parsedUrl.query.after ? `&after=${parsedUrl.query.after}` : ''
