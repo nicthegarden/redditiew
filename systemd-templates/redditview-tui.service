@@ -5,10 +5,15 @@ After=network.target redditview-api.service
 Requires=redditview-api.service
 
 [Service]
-Type=simple
+Type=forking
 User=__USERNAME__
 WorkingDirectory=__INSTALL_PATH__
-ExecStart=__TMUX_BIN__ new-session -d -s redditview -x 120 -y 40 "__TUI_BIN__"
+
+# Start tmux server in background with proper environment
+ExecStartPre=__TMUX_BIN__ new-session -d -s redditview -x 120 -y 40 -c __INSTALL_PATH__
+
+# Run TUI application in the tmux session with proper TTY
+ExecStart=__TMUX_BIN__ send-keys -t redditview:0 "__TUI_BIN__" Enter
 
 # Environment variables
 Environment="DISPLAY=:0"
