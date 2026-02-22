@@ -58,6 +58,72 @@ var (
 		Bold(true)
 )
 
+// ============= Configuration =============
+
+type AppConfig struct {
+	TUI struct {
+		DefaultSubreddit string `json:"default_subreddit"`
+		PostsPerPage     int    `json:"posts_per_page"`
+		ListHeight       int    `json:"list_height"`
+		MaxTitleLength   int    `json:"max_title_length"`
+	} `json:"tui"`
+	Web struct {
+		DefaultSubreddit string `json:"default_subreddit"`
+		PostsPerPage     int    `json:"posts_per_page"`
+		Theme            string `json:"theme"`
+	} `json:"web"`
+	API struct {
+		BaseURL        string `json:"base_url"`
+		TimeoutSeconds int    `json:"timeout_seconds"`
+	} `json:"api"`
+}
+
+var appConfig AppConfig
+
+func loadConfig() error {
+	// Try to load from config.json in parent directory
+	configPath := "../../config.json"
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		// If not found, use defaults
+		appConfig = AppConfig{}
+		appConfig.TUI.DefaultSubreddit = "golang"
+		appConfig.TUI.PostsPerPage = 50
+		appConfig.TUI.ListHeight = 12
+		appConfig.TUI.MaxTitleLength = 80
+		appConfig.API.BaseURL = "http://localhost:3002/api"
+		appConfig.API.TimeoutSeconds = 10
+		return nil
+	}
+	
+	err = json.Unmarshal(data, &appConfig)
+	if err != nil {
+		return fmt.Errorf("failed to parse config.json: %w", err)
+	}
+	
+	// Set defaults for any missing values
+	if appConfig.TUI.DefaultSubreddit == "" {
+		appConfig.TUI.DefaultSubreddit = "golang"
+	}
+	if appConfig.TUI.PostsPerPage == 0 {
+		appConfig.TUI.PostsPerPage = 50
+	}
+	if appConfig.TUI.ListHeight == 0 {
+		appConfig.TUI.ListHeight = 12
+	}
+	if appConfig.TUI.MaxTitleLength == 0 {
+		appConfig.TUI.MaxTitleLength = 80
+	}
+	if appConfig.API.BaseURL == "" {
+		appConfig.API.BaseURL = "http://localhost:3002/api"
+	}
+	if appConfig.API.TimeoutSeconds == 0 {
+		appConfig.API.TimeoutSeconds = 10
+	}
+	
+	return nil
+}
+
 // ============= Data Models =============
 
 type RedditPostData struct {
@@ -121,7 +187,7 @@ type APIClient struct {
 }
 
 func NewAPIClient() *APIClient {
-	return &APIClient{baseURL: apiBaseURL}
+	return &APIClient{baseURL: appConfig.API.BaseURL}
 }
 
 func (c *APIClient) FetchPosts(subreddit string) ([]RedditPostData, error) {
@@ -203,7 +269,7 @@ func initialModel() Model {
 	
 	m := Model{
 		client:         NewAPIClient(),
-		subreddit:      "golang",
+		subreddit:      appConfig.TUI.DefaultSubreddit,
 		spinner:        s,
 		searchInput:    searchInput,
 		subredditInput: subInput,
@@ -248,10 +314,15 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+	var handled bool
+	
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		m, cmd = m.handleKeyPress(msg)
-		return m, cmd
+		m, cmd, handled = m.handleKeyPress(msg)
+		if handled {
+			return m, cmd
+		}
+		// If not handled, fall through to list update
 		
 	case postsLoadedMsg:
 		if msg.error != nil {
@@ -277,8 +348,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 	}
 	
-	// List update
-	if !m.showDetails {
+	// List update for navigation keys
+	if !m.showDetails && !m.searching && !m.selectingSub {
 		m.list, cmd = m.list.Update(msg)
 	}
 	
@@ -287,23 +358,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *Model) updateListSize() {
 	if m.showDetails {
-		// Show both list and details
-		listHeight := (m.windowHeight - 8) / 2
+		// Show both list and details: list gets 8 items max
+		listHeight := min(8, m.windowHeight/6)
+		if listHeight < 3 {
+			listHeight = 3
+		}
 		m.list.SetSize(m.windowWidth-2, listHeight)
 	} else {
-		// Show full list
-		m.list.SetSize(m.windowWidth-2, m.windowHeight-8)
+		// Show full list: limit to 12 items for better readability
+		listHeight := min(12, m.windowHeight-8)
+		m.list.SetSize(m.windowWidth-2, listHeight)
 	}
 }
 
-func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
+func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 	// Handle subreddit selection
 	if m.selectingSub {
 		switch msg.String() {
 		case "esc":
 			m.selectingSub = false
 			m.subredditInput.Reset()
-			return m, nil
+			return m, nil, true
 		case "enter":
 			newSub := strings.TrimSpace(m.subredditInput.Value())
 			if newSub != "" {
@@ -312,12 +387,12 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 				m.selectingSub = false
 				m.loading = true
 				m.showDetails = false
-				return m, m.loadPosts(newSub)
+				return m, m.loadPosts(newSub), true
 			}
 		}
 		var cmd tea.Cmd
 		m.subredditInput, cmd = m.subredditInput.Update(msg)
-		return m, cmd
+		return m, cmd, true
 	}
 	
 	// Handle search
@@ -327,17 +402,17 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 			m.searching = false
 			m.searchInput.Reset()
 			m.filterPosts("")
-			return m, nil
+			return m, nil, true
 		case "enter":
 			m.searching = false
 			query := m.searchInput.Value()
 			m.filterPosts(query)
-			return m, nil
+			return m, nil, true
 		}
 		var cmd tea.Cmd
 		m.searchInput, cmd = m.searchInput.Update(msg)
 		m.filterPosts(m.searchInput.Value())
-		return m, cmd
+		return m, cmd, true
 	}
 	
 	// Detail view navigation
@@ -346,52 +421,53 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd) {
 		case "esc", "tab":
 			m.showDetails = false
 			m.detailScrollY = 0
-			return m, nil
+			return m, nil, true
 		case "up", "k":
 			if m.detailScrollY > 0 {
 				m.detailScrollY--
 			}
-			return m, nil
+			return m, nil, true
 		case "down", "j":
 			if m.detailScrollY < m.detailMaxScroll {
 				m.detailScrollY++
 			}
-			return m, nil
+			return m, nil, true
 		case "home":
 			m.detailScrollY = 0
-			return m, nil
+			return m, nil, true
 		case "end":
 			m.detailScrollY = m.detailMaxScroll
-			return m, nil
+			return m, nil, true
 		}
 	}
 	
 	// Global shortcuts
 	switch msg.String() {
 	case "ctrl+c", "q":
-		return m, tea.Quit
+		return m, tea.Quit, true
 	case "ctrl+f":
 		m.searching = true
 		m.searchInput.Focus()
-		return m, nil
+		return m, nil, true
 	case "ctrl+r":
 		m.selectingSub = true
 		m.subredditInput.Focus()
 		m.subredditInput.SetValue(m.subreddit)
-		return m, nil
+		return m, nil, true
 	case "f5":
 		m.loading = true
 		m.showDetails = false
-		return m, m.loadPosts(m.subreddit)
+		return m, m.loadPosts(m.subreddit), true
 	case "enter":
 		if len(m.filteredPosts) > 0 && m.list.Index() < len(m.filteredPosts) {
 			m.showDetails = true
 			m.detailScrollY = 0
 		}
-		return m, nil
+		return m, nil, true
 	}
 	
-	return m, nil
+	// Key not handled - let list component handle it
+	return m, nil, false
 }
 
 func (m *Model) filterPosts(query string) {
@@ -638,6 +714,11 @@ func max(a, b int) int {
 // ============= Main =============
 
 func main() {
+	// Load configuration
+	if err := loadConfig(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not load config.json: %v\n", err)
+	}
+	
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
