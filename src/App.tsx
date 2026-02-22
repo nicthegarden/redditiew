@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import PostDetail from './components/PostDetail'
 
 const PROXY = 'http://localhost:3001'
 const API_BASE = 'http://localhost:3001/api'
@@ -403,19 +404,7 @@ export default function App() {
       </div>
       
       <div className="right-pane">
-        {selected ? (
-          <iframe 
-            ref={iframeRef}
-            src={`${PROXY}${selected.data.permalink}`} 
-            title="Reddit" 
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms" 
-          />
-        ) : (
-          <div className="empty-state">
-            <h3>Select a post</h3>
-            <p>Use ↑↓ to navigate, Enter to open</p>
-          </div>
-        )}
+        <PostDetail post={selected} />
       </div>
     </div>
   )
