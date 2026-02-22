@@ -192,7 +192,7 @@ func NewAPIClient() *APIClient {
 }
 
 func (c *APIClient) FetchPosts(subreddit string) ([]RedditPostData, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/r/%s.json?limit=50", c.baseURL, subreddit))
+	resp, err := http.Get(fmt.Sprintf("%s/r/%s.json?limit=%d", c.baseURL, subreddit, appConfig.TUI.PostsPerPage))
 	if err != nil {
 		return nil, err
 	}
@@ -221,9 +221,10 @@ func (c *APIClient) SearchPosts(query string) ([]RedditPostData, error) {
 		return []RedditPostData{}, nil
 	}
 	
-	searchURL := fmt.Sprintf("%s/search.json?q=%s&type=link&limit=50", 
+	searchURL := fmt.Sprintf("%s/search.json?q=%s&type=link&limit=%d", 
 		c.baseURL, 
-		url.QueryEscape(query))
+		url.QueryEscape(query),
+		appConfig.TUI.PostsPerPage)
 	
 	resp, err := http.Get(searchURL)
 	if err != nil {

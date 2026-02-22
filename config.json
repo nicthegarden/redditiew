@@ -1,7 +1,7 @@
 {
   "tui": {
     "default_subreddit": "sysadmin",
-    "posts_per_page": 50,
+    "posts_per_page": 200,
     "list_height": 10,
     "max_title_length": 80
   },
