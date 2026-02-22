@@ -1,0 +1,37 @@
+[Unit]
+Description=RedditView Terminal User Interface (TUI)
+Documentation=https://github.com/nicthegarden/redditiew
+After=network.target redditview-api.service
+Requires=redditview-api.service
+
+[Service]
+Type=simple
+User=__USERNAME__
+WorkingDirectory=__INSTALL_PATH__
+ExecStart=__TMUX_BIN__ new-session -d -s redditview -x 120 -y 40 "__TUI_BIN__"
+
+# Environment variables
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=%h/.Xauthority"
+
+# Auto-restart on failure
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=redditview-tui
+
+# Process management
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+# Stop script to clean up tmux session
+ExecStopPost=/bin/bash -c "__TMUX_BIN__ kill-session -t redditview || true"
+
+[Install]
+WantedBy=multi-user.target

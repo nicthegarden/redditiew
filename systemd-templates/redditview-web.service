@@ -1,0 +1,38 @@
+[Unit]
+Description=RedditView Web Interface Only
+Documentation=https://github.com/nicthegarden/redditiew
+After=network.target
+
+[Service]
+Type=simple
+User=__USERNAME__
+WorkingDirectory=__INSTALL_PATH__
+ExecStart=__NODE_BIN__ api-server.js
+
+# Environment variables
+Environment="NODE_ENV=production"
+Environment="PORT=3002"
+Environment="WEB_ONLY=true"
+
+# Auto-restart on failure
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=redditview-web
+
+# Process management
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
