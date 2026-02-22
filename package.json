@@ -11,7 +11,7 @@
     "dev": "vite",
     "dev:vite": "vite",
     "dev:proxy": "node proxy.js",
-    "dev:api": "node --loader ts-node/esm api-server.ts",
+    "dev:api": "node api-server.js",
     "dev:core": "npm run build --workspace=@redditview/core -- --watch",
     "build": "npm run build --workspace=@redditview/core && vite build",
     "lint": "eslint .",
@@ -34,6 +34,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "ts-node": "^10.9.2",
     "vite": "^7.3.1"
   }
 }
