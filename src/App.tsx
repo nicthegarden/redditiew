@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import PostDetail from './components/PostDetail'
+import { loadConfig, getConfig } from './config'
 
 const PROXY = '/api'
 const API_BASE = '/api'
@@ -105,6 +106,8 @@ function usePostCache() {
 }
 
 export default function App() {
+  const [configLoaded, setConfigLoaded] = useState(false)
+  const [defaultSubreddit, setDefaultSubreddit] = useState('sysadmin')
   const [sub, setSub] = useState('sysadmin')
   const [input, setInput] = useState('sysadmin')
   const [search, setSearch] = useState('')
@@ -129,6 +132,28 @@ export default function App() {
   const filterRef = useRef<HTMLInputElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const { cached, saveToCache } = usePostCache()
+
+  // Load config on mount
+  useEffect(() => {
+    const initConfig = async () => {
+      try {
+        await loadConfig()
+        const config = getConfig()
+        const defaultSub = config.web.default_subreddit
+        setDefaultSubreddit(defaultSub)
+        setSub(defaultSub)
+        setInput(defaultSub)
+      } catch (err) {
+        console.error('Failed to load config:', err)
+        // Use hardcoded defaults if config fails
+        setDefaultSubreddit('sysadmin')
+        setSub('sysadmin')
+        setInput('sysadmin')
+      }
+      setConfigLoaded(true)
+    }
+    initConfig()
+  }, [])
 
   const fetchPosts = useCallback(async (subreddit: string, cursor: string | null = null) => {
     const isMore = !!cursor
