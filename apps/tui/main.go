@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -344,6 +345,27 @@ func toInt(v interface{}) int {
 		return val
 	}
 	return 0
+}
+
+// openURL opens a URL in the default browser
+func openURL(urlStr string) error {
+	if urlStr == "" {
+		return fmt.Errorf("empty URL")
+	}
+	
+	// Determine the command based on OS
+	var cmd *exec.Cmd
+	switch os.Getenv("GOOS") {
+	case "darwin":
+		cmd = exec.Command("open", urlStr)
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", urlStr)
+	default:
+		// Linux and other Unix-like systems
+		cmd = exec.Command("xdg-open", urlStr)
+	}
+	
+	return cmd.Run()
 }
 
 // ============= Main Model =============
@@ -795,6 +817,26 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 			return m, m.loadComments(m.subreddit, post.ID), true
 		}
 		return m, nil, true
+	case "w":
+		// Open current post URL in browser
+		if len(m.filteredPosts) > 0 {
+			post := m.filteredPosts[m.list.Index()]
+			// Use permalink if available, fallback to URL
+			postURL := post.Permalink
+			if postURL == "" {
+				postURL = post.URL
+			}
+			if postURL != "" {
+				// Prepend reddit.com domain if it's just a permalink
+				if strings.HasPrefix(postURL, "/") {
+					postURL = "https://reddit.com" + postURL
+				}
+				if err := openURL(postURL); err != nil {
+					m.error = fmt.Sprintf("Failed to open URL: %v", err)
+				}
+			}
+		}
+		return m, nil, true
 	case "enter":
 		if len(m.filteredPosts) > 0 && m.list.Index() < len(m.filteredPosts) {
 			m.showDetails = true
@@ -1075,9 +1117,9 @@ func (m Model) renderDetailsSection(height int) string {
 func (m Model) renderFooter() string {
 	if m.showDetails {
 		if m.showComments {
-			return footerStyle.Render("↑↓: scroll comments  •  h/l: switch posts  •  Esc: close comments  •  Ctrl+F: search  •  q: quit")
+			return footerStyle.Render("↑↓: scroll comments  •  h/l: switch posts  •  w: open URL  •  Esc: close comments  •  Ctrl+F: search  •  q: quit")
 		}
-		return footerStyle.Render("↑↓: scroll details  •  h/l: switch posts  •  Esc/Tab: back to list  •  c: view comments  •  q: quit")
+		return footerStyle.Render("↑↓: scroll details  •  h/l: switch posts  •  w: open URL  •  Esc/Tab: back to list  •  c: view comments  •  q: quit")
 	}
 	
 	status := "no posts"
@@ -1085,7 +1127,7 @@ func (m Model) renderFooter() string {
 		status = fmt.Sprintf("%d/%d", m.list.Index()+1, len(m.filteredPosts))
 	}
 	
-	return footerStyle.Render(fmt.Sprintf("Post %s  •  Enter: view details  •  Ctrl+F: search  •  F5: refresh  •  q: quit", status))
+	return footerStyle.Render(fmt.Sprintf("Post %s  •  Enter: view details  •  w: open URL  •  Ctrl+F: search  •  F5: refresh  •  q: quit", status))
 }
 
 // ============= Utilities =============
