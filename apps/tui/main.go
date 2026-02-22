@@ -524,6 +524,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.error = msg.error.Error()
 		} else {
 			m.comments = msg.comments
+			m.commentsLoading = false
+			// Calculate max scroll for comments (estimate height as 40 lines visible)
+			m.calculateCommentsMaxScroll(40)
 		}
 		return m, nil
 		
@@ -531,6 +534,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.windowWidth = msg.Width
 		m.windowHeight = msg.Height
 		m.updateListSize()
+		// Recalculate max scroll for comments on window resize
+		if m.showComments {
+			detailsHeight := m.windowHeight - 8 - (m.windowHeight-8)/2 - 1
+			m.calculateCommentsMaxScroll(detailsHeight)
+		}
 		return m, nil
 		
 	case spinner.TickMsg:
@@ -622,7 +630,8 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 			m.showDetails = false
 			m.detailScrollY = 0
 			return m, nil, true
-		case "up", "k":
+		case "up":
+			// Up arrow: scroll comments if open, else scroll details
 			if m.showComments {
 				if m.commentsScrollY > 0 {
 					m.commentsScrollY--
@@ -633,12 +642,29 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 				}
 			}
 			return m, nil, true
-		case "down", "j":
+		case "down":
+			// Down arrow: scroll comments if open, else scroll details
 			if m.showComments {
 				if m.commentsScrollY < m.commentsMaxScroll {
 					m.commentsScrollY++
 				}
 			} else {
+				if m.detailScrollY < m.detailMaxScroll {
+					m.detailScrollY++
+				}
+			}
+			return m, nil, true
+		case "k":
+			// k: scroll details only (not comments)
+			if !m.showComments {
+				if m.detailScrollY > 0 {
+					m.detailScrollY--
+				}
+			}
+			return m, nil, true
+		case "j":
+			// j: scroll details only (not comments)
+			if !m.showComments {
 				if m.detailScrollY < m.detailMaxScroll {
 					m.detailScrollY++
 				}
@@ -691,22 +717,24 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 			}
 			return m, nil, true
 		case "left", "h":
-			// Left/h: previous post (disabled when comments open)
-			if !m.showComments && len(m.filteredPosts) > 0 {
+			// Left/h: previous post (works even when comments are open)
+			if len(m.filteredPosts) > 0 {
 				idx := m.list.Index()
 				if idx > 0 {
 					m.list.CursorUp()
 					m.detailScrollY = 0
+					m.commentsScrollY = 0
 				}
 			}
 			return m, nil, true
 		case "right", "l":
-			// Right/l: next post (disabled when comments open)
-			if !m.showComments && len(m.filteredPosts) > 0 {
+			// Right/l: next post (works even when comments are open)
+			if len(m.filteredPosts) > 0 {
 				idx := m.list.Index()
 				if idx < len(m.filteredPosts)-1 {
 					m.list.CursorDown()
 					m.detailScrollY = 0
+					m.commentsScrollY = 0
 				}
 			}
 			return m, nil, true
@@ -799,6 +827,29 @@ func (m *Model) updateListItems() {
 		items[i] = PostItem{post}
 	}
 	m.list.SetItems(items)
+}
+
+// ============= Helpers =============
+
+func (m *Model) calculateCommentsMaxScroll(height int) {
+	if len(m.comments) == 0 {
+		m.commentsMaxScroll = 0
+		return
+	}
+	
+	// Build comment lines to calculate total
+	var commentLines []string
+	for _, comment := range m.comments {
+		commentLines = append(commentLines, "author line")
+		if comment.Body != "" {
+			wrapped := wrapText(comment.Body, m.windowWidth-6)
+			wrappedLines := strings.Split(wrapped, "\n")
+			commentLines = append(commentLines, wrappedLines...)
+		}
+		commentLines = append(commentLines, "") // Blank line between comments
+	}
+	
+	m.commentsMaxScroll = max(0, len(commentLines)-height+4)
 }
 
 // ============= Rendering =============
@@ -945,9 +996,6 @@ func (m Model) renderCommentsPanel(height int) string {
 	if endLine > len(commentLines) {
 		endLine = len(commentLines)
 	}
-	
-	// Calculate max scroll
-	m.commentsMaxScroll = max(0, len(commentLines)-height+4)
 	
 	if startLine < len(commentLines) {
 		visibleLines := commentLines[startLine:endLine]
