@@ -1,62 +1,142 @@
-# RedditView
+# RedditView - Multi-Interface Reddit Browser
 
-A **keyboard-friendly Reddit browser** with a split-pane interface, built for efficient browsing.
+A modern, feature-rich Reddit client available in both Terminal User Interface (TUI) and Web UI formats. Browse Reddit posts, read comments, and open threads directly from your terminal or web browser.
 
-![](https://img.shields.io/badge/React-19.2.0-blue) ![](https://img.shields.io/badge/TypeScript-Latest-blue) ![](https://img.shields.io/badge/Vite-7.3.1-green) ![](https://img.shields.io/badge/Node-18+-green)
+## 🎯 Features
 
-## Features
+### Core Functionality
+- **Browse Reddit Posts** - Navigate posts from any subreddit with smooth pagination
+- **View Comments** - Read threaded discussions with scrollable comment panels
+- **Search Posts** - Full-text search across loaded posts
+- **Subreddit Switching** - Quickly switch between subreddits without restarting
+- **Open in Browser** - Launch post URLs directly in your default browser
+- **Real-time Stats** - See post scores, comment counts, and author information
 
-✨ **Split-pane interface** — Posts on left, content on right (email-client style)  
-⌨️ **Keyboard-first** — Navigate with arrow keys, Tab, Enter  
-🔍 **Smart search** — Filter posts locally or search all of Reddit  
-💾 **Intelligent caching** — 1-hour per-subreddit cache + 60s proxy cache  
-🛡️ **Rate-limit recovery** — Auto-retry with exponential backoff  
-📱 **Responsive design** — Works on desktop, tablet, and mobile  
-🌙 **Dark theme ready** — Dark mode by default, light theme CSS included  
-⚡ **Fast** — Vite hot reload, lazy-loaded thumbnails, optimized rendering  
+### TUI Application Features
+- **Keyboard-Driven Navigation** - Efficient keybindings for power users
+- **Split-View Display** - See post list, details, and comments simultaneously
+- **Smooth Scrolling** - Arrow keys, Page Up/Down for precise navigation
+- **Responsive Design** - Adapts to any terminal size
+- **Error Handling** - Graceful error messages and recovery
 
-## Quick Start
+### Web UI Features  
+- **Modern UI Design** - Clean, intuitive interface
+- **Responsive Layout** - Works on desktop and tablet
+- **Real-time Updates** - Live comment and post data
+- **Customizable Theme** - Light/dark mode support
 
+## 📸 Screenshots
+
+### TUI - Post List View
+![TUI Post List](TUI.png)
+
+### TUI - Comments View
+![TUI Comments](TUI-Comment.png)
+
+### Web UI
+![Web UI](WebUI.png)
+
+## 🚀 Quick Start
+
+### For Linux Users
 ```bash
-# Install
+# Install dependencies (choose one)
+# Ubuntu/Debian
+sudo apt-get install golang-go nodejs npm
+
+# Fedora/RHEL
+sudo dnf install golang nodejs npm
+
+# Install the application
+git clone https://github.com/yourusername/redditiew-local.git
+cd redditiew-local
 npm install
+go build -o apps/tui/redditview ./apps/tui
+npm run build
 
-# Run (starts proxy + Vite together)
-npm run dev
+# Start the server
+npm start
 
-# Opens: http://localhost:5173
+# In another terminal, run the TUI
+./apps/tui/redditview
 ```
 
-Then:
-1. Enter a subreddit name (e.g., `linux`, `sysadmin`)
-2. Use ↑↓ keys to navigate posts
-3. Press Enter to view
-4. Type to filter posts, press Enter to search Reddit
+### For Windows Users
+```powershell
+# Install dependencies from:
+# - Go: https://golang.org/dl
+# - Node.js: https://nodejs.org
 
-## Keyboard Shortcuts
+# Clone and setup
+git clone https://github.com/yourusername/redditiew-local.git
+cd redditiew-local
+npm install
+go build -o apps/tui/redditview.exe ./apps/tui
+npm run build
 
-| Key | Action |
-|-----|--------|
-| `Tab` | Cycle focus: search → filter → post list |
-| `Shift+Tab` | Cycle backwards |
-| `↑` / `↓` | Navigate posts |
-| `Enter` | Open selected post / search Reddit |
-| `Ctrl+F` | Focus iframe for page search |
+# Start the server
+npm start
 
-## Configuration
+# In another PowerShell window, run the TUI
+.\apps\tui\redditview.exe
+```
 
-RedditView supports a `config.json` file in the root directory for easy customization of both the TUI and Web interfaces.
+👉 **See [QUICKSTART.md](QUICKSTART.md) for detailed step-by-step instructions**
 
-### Setup
+## 📖 Documentation
 
-Create a `config.json` file in the project root:
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes (Windows & Linux)
+- **[INSTALLATION.md](INSTALLATION.md)** - Detailed installation and build instructions
+- **[CONFIGURATION.md](CONFIGURATION.md)** - Configure the application to your preferences
+- **[TUI_KEYBINDINGS.md](TUI_KEYBINDINGS.md)** - Complete keyboard shortcut reference
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture and design decisions
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Contributing and development guide
+
+## 🎮 Basic Usage
+
+### Terminal UI (TUI)
+
+**Starting the Application**
+```bash
+# Ensure API server is running
+npm start
+
+# In another terminal
+./apps/tui/redditview
+```
+
+**Basic Navigation**
+| Action | Keys |
+|--------|------|
+| Browse posts | `j`/`k` or `↑`/`↓` |
+| View post details | `Enter` |
+| View comments | `c` |
+| Scroll details/comments | `↑`/`↓` or `Page Up`/`Page Down` |
+| Switch subreddits | `s` |
+| Search posts | `Ctrl+F` |
+| Open post in browser | `w` |
+| Back to list | `Esc` or `Tab` |
+| Quit | `q` |
+
+See [TUI_KEYBINDINGS.md](TUI_KEYBINDINGS.md) for complete keybinding documentation.
+
+### Web UI
+
+1. Open http://localhost:3000 in your web browser
+2. Select a subreddit from the sidebar
+3. Click on any post to view details
+4. Click "View Comments" to expand the comment section
+
+## ⚙️ Configuration
+
+Create/edit `config.json` in the project root:
 
 ```json
 {
   "tui": {
-    "default_subreddit": "golang",
-    "posts_per_page": 50,
-    "list_height": 12,
+    "default_subreddit": "sysadmin",
+    "posts_per_page": 200,
+    "list_height": 10,
     "max_title_length": 80
   },
   "web": {
@@ -71,105 +151,140 @@ Create a `config.json` file in the project root:
 }
 ```
 
-### Configuration Options
+👉 **See [CONFIGURATION.md](CONFIGURATION.md) for detailed configuration options**
 
-#### TUI Settings (`tui`)
-- **`default_subreddit`** (string): Subreddit loaded on startup (default: `"golang"`)
-- **`posts_per_page`** (number): Number of posts to fetch (default: `50`)
-- **`list_height`** (number): Maximum lines shown in list view (default: `12`)
-- **`max_title_length`** (number): Truncate titles longer than this (default: `80`)
-
-#### Web Settings (`web`)
-- **`default_subreddit`** (string): Initial subreddit in web browser (default: `"sysadmin"`)
-- **`posts_per_page`** (number): Posts per page in web interface (default: `20`)
-- **`theme`** (string): Default theme: `"dark"` or `"light"` (default: `"dark"`)
-
-#### API Settings (`api`)
-- **`base_url`** (string): Backend API endpoint (default: `"http://localhost:3002/api"`)
-- **`timeout_seconds`** (number): Request timeout in seconds (default: `10`)
-
-### Usage
-
-- **TUI**: Loads config from `../../config.json` relative to the TUI binary directory
-- **Web**: Loads config from `/config.json` (served by HTTP)
-- If config file is missing, sensible defaults are used
-
-## Architecture
-
-**Frontend:** React 19 + TypeScript + Vite  
-**Backend:** Node.js proxy server (CORS bypass + caching)  
-**Storage:** localStorage (1h per subreddit) + in-memory proxy cache
-**TUI:** Go + Bubble Tea (Terminal UI)
-
-## Recent Updates
-
-✅ **TypeScript migration** — Full type safety  
-✅ **Rate-limit handling** — Automatic retry logic  
-✅ **Reddit-wide search** — Search all subreddits from filter box  
-✅ **Better pagination** — Manual "Load More" button  
-✅ **Mobile responsive** — Optimized for phones & tablets  
-✅ **Theme support** — Light theme CSS ready  
-
-## Documentation
-
-- **Setup & development:** See [DEVELOPMENT.md](./DEVELOPMENT.md)
-- **Feature specs:** See [SPEC.md](./SPEC.md)
-
-## Project Structure
+## 🏗️ Project Structure
 
 ```
-src/
-├── App.tsx          # Main component (React + TS)
-├── main.tsx         # Entry point
-└── index.css        # Dark/light themes
-
-proxy.ts            # CORS proxy (Node.js)
-vite.config.ts      # Build config
-tsconfig.json       # Type checking
+redditiew-local/
+├── apps/
+│   ├── tui/                    # Terminal User Interface (Go)
+│   │   └── main.go            # TUI application
+│   └── web/                   # Web interface (placeholder)
+├── packages/
+│   ├── api/                   # API server implementation
+│   └── reddit-scraper/        # Reddit data scraper
+├── api-server.js              # API server (JavaScript)
+├── config.json                # Configuration file
+├── package.json               # Node.js dependencies
+├── README.md                  # This file
+├── QUICKSTART.md              # Quick start guide
+├── CONFIGURATION.md           # Configuration reference
+└── ARCHITECTURE.md            # Technical architecture
 ```
 
-## Commands
+## 🔧 System Requirements
 
+### Minimum Requirements
+- **Go** 1.19+ (for TUI)
+- **Node.js** 16+ (for API server)
+- **npm** 7+
+- **Terminal** with 80x24 character minimum
+
+### Recommended
+- **Go** 1.21+
+- **Node.js** 18+ LTS
+- **Terminal** with 120x40 character minimum
+- **Modern OS** (Windows 10+, Ubuntu 20.04+, macOS 10.15+)
+
+## 🌐 API Reference
+
+The application uses a local REST API server running on `localhost:3002`.
+
+### Key Endpoints
+
+**Get Posts from Subreddit**
+```
+GET /api/r/:subreddit.json?limit=200
+```
+
+**Get Comments for Post**
+```
+GET /api/r/:subreddit/comments/:postid
+```
+
+See the API server implementation in `api-server.js` for complete details.
+
+## 🐛 Troubleshooting
+
+### TUI Won't Start
 ```bash
-npm run dev         # Start dev (proxy + Vite)
-npm run dev:vite    # Vite only
-npm run dev:proxy   # Proxy only
-npm run build       # Production build
-npm run preview     # Preview built version
-npm run lint        # ESLint check
+# Check if API server is running
+curl http://localhost:3002/api/r/sysadmin.json
+
+# Rebuild the binary
+cd apps/tui && go build -o redditview .
+
+# Check Go installation
+go version
 ```
 
-## Troubleshooting
+### Comments Not Loading
+- Ensure API server is running: `npm start`
+- Check your internet connection
+- Verify the subreddit name is valid
+- Try refreshing with `F5`
 
-**"Proxy error: connection refused"**
-- Make sure proxy is running on port 3001
-- Check: `lsof -i :3001`
+### Performance Issues
+- Increase terminal window size (minimum 80x24)
+- Reduce `posts_per_page` in config.json
+- Ensure system has at least 512MB RAM
 
-**"Rate limited" error**
-- Wait 60 seconds (proxy retries automatically)
-- Or clear cache: `localStorage.clear()`
+## 📋 System Support
 
-**Posts not loading**
-- Check Network tab (F12) for errors
-- Verify subreddit exists
+| OS | Status | Notes |
+|----|---------| ------|
+| Linux | ✅ Fully Supported | Tested on Ubuntu, Fedora, Arch |
+| Windows | ✅ Fully Supported | Windows 10 and newer |
+| macOS | ✅ Fully Supported | Intel and Apple Silicon |
 
-**TypeScript errors**
-- Run: `npx tsc --noEmit`
+## 🔗 Key Dependencies
 
-## Future Ideas
+### Backend
+- **Go** - TUI application language
+- **Bubble Tea** - TUI framework
+- **Node.js/Express** - API server
+- **Axios** - HTTP client
 
-- [ ] Theme toggle button in UI
-- [ ] User settings (cache TTL, pagination size)
-- [ ] Keyboard shortcut customization
-- [ ] Post filtering by score/date/time
-- [ ] Multi-subreddit view
-- [ ] PWA for offline reading
-- [ ] Auto dark-mode detection
+### Frontend (Web)
+- **React** - UI framework
+- **Tailwind CSS** - Styling
+- **Axios** - HTTP client
 
-## License
+## 📝 Recent Changes
 
-Built with ❤️ for efficient Reddit browsing.
+### Latest Features (v0.2.0)
+- ✨ Enhanced comment scrolling with proper height calculation
+- ✨ Open posts directly in browser with `w` key
+- ✨ Increased page scroll distance for faster navigation
+- ✨ 200 posts per page by default (up from 50)
+- 🐛 Fixed comment scrolling state propagation
+- 🐛 Fixed list display bug affecting post visibility
+
+See [git log](https://github.com/yourusername/redditiew-local/commits) for complete history.
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [DEVELOPMENT.md](DEVELOPMENT.md) for guidelines.
+
+## 📄 License
+
+This project is licensed under the MIT License - see LICENSE file for details.
+
+## 🙋 Support & Feedback
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/redditiew-local/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/redditiew-local/discussions)
+- **Email**: support@example.com
+
+## 🎉 Acknowledgments
+
+- [Bubble Tea](https://github.com/charmbracelet/bubbletea) - TUI framework
+- [Lipgloss](https://github.com/charmbracelet/lipgloss) - Terminal styling
+- Reddit - Data source
 
 ---
 
-**Need help?** Check [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed setup and architecture info.
+**Happy browsing! 🚀**
+
+For more information, see the [complete documentation](#-documentation).
