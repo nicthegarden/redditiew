@@ -1,6 +1,7 @@
-# RedditView TUI v2 - Professional Terminal Application
+# RedditView TUI v3 - Email Client-Style 3-Pane Terminal UI
 
 > A feature-rich, modern terminal user interface for browsing Reddit built with Go and Bubble Tea
+> Inspired by Mutt/Thunderbird email client design patterns
 
 ## 🚀 Quick Start
 
@@ -27,10 +28,11 @@ That's it! The TUI will automatically start the API server and launch the applic
 - ✅ Comprehensive error handling
 
 ### Advanced Navigation
-- Multi-screen system (Posts → Details → Comments)
+- **Email client-style 3-pane simultaneous display** (left: posts, middle: details, right: comments)
+- Tab to cycle between panes, arrow keys to navigate within pane
 - Vim-style keyboard shortcuts (j/k)
-- Arrow key support
-- Context-aware help text on every screen
+- Focus indicator showing which pane is active
+- All content visible at once - no screen switching
 
 ### Professional Design
 - Reddit-inspired color scheme
@@ -43,91 +45,104 @@ That's it! The TUI will automatically start the API server and launch the applic
 
 | Key | Action |
 |-----|--------|
-| `j` / `k` | Navigate down/up |
-| `↓` / `↑` | Navigate down/up |
-| `/` | Search posts |
+| `Tab` | Cycle focus between panes |
+| `j` / `k` | Navigate within active pane (down/up) |
+| `↓` / `↑` | Navigate within active pane (down/up) |
+| `/` | Search posts (in left pane) |
 | `s` | Switch subreddit |
-| `Enter` | View post details |
-| `c` | View comments |
-| `b` | Go back |
+| `c` | Collapse/expand comment thread (right pane) |
 | `q` / `Ctrl+C` | Quit |
 
-## 📖 Screens
+## 📖 Layout
 
-### Post List
-Main browsing interface with all posts from selected subreddit.
-```
-🔥 r/golang (50 posts)
-j/k or ↓↑ to navigate | /: search | s: subreddit | Enter: view | c: comments | q: quit
-┌────────────────────────────────────────┐
-│ ❯ How to write efficient Go code      │
-│   u/john_dev • ⬆3240 • 💬156          │
-│ • Memory management best practices    │
-│   u/alice_rust • ⬆2891 • 💬203        │
-│ • Concurrency patterns in Go          │
-│   u/bob_gopher • ⬆2445 • 💬89         │
-└────────────────────────────────────────┘
-j/k: navigate | /: search | s: subreddit | Enter: view | c: comments | q: quit
-```
+### 3-Pane Email Client Design
 
-### Post Detail
-Full view of selected post with content and actions.
 ```
-How to write efficient Go code
-👤 u/john_dev  r/golang  ⬆ 3.2K  💬 156
-This comprehensive guide covers memory management, concurrency patterns,
-and optimization techniques for Go applications...
+🔥 r/golang  50 posts
+Tab: focus | j/k: navigate | /: search | s: subreddit | q: quit
 
-⬆ Upvote  ⬇ Downvote  💾 Save  🔗 Open on Reddit
-c: comments | b: back | q: quit
+┌─────────────────┬──────────────────────┬─────────────────┐
+│ 📬 Posts        │ 📄 Details           │ 💬 Comments     │
+│ (focused)       │ (scrollable)         │ (scrollable)    │
+├─────────────────┼──────────────────────┼─────────────────┤
+│ How to write    │ How to write         │ u/alice ⬆542    │
+│ efficient Go    │ efficient Go code    │ Great post!...  │
+│ u/john ⬆3.2K   │                      │                 │
+│                 │ u/john_dev           │   u/bob ⬆89     │
+│ Memory mgmt     │ r/golang ⬆3.2K 💬156 │   Exactly what  │
+│ u/alice ⬆2.8K  │                      │   I needed...   │
+│                 │ This comprehensive   │                 │
+│ Concurrency     │ guide covers memory  │ u/charlie ⬆234  │
+│ patterns        │ management...        │ Thanks for...   │
+│ u/bob ⬆2.4K    │                      │                 │
+└─────────────────┴──────────────────────┴─────────────────┘
+
+Tab: focus | j/k: navigate | /: search | s: subreddit | q: quit
 ```
 
-### Comments
-Hierarchical view of post comments with indentation.
-```
-Comments (156)
-u/alice_rust  ⬆ 542
-Great post! I learned a lot about memory management...
+**Left Pane (Posts)**
+- Scrollable list of posts with titles
+- Author, score, and comment count for each
+- Currently selected post highlighted
+- All posts visible simultaneously
 
-  u/bob_reply  ⬆ 89
-  This is exactly what I needed!
+**Middle Pane (Details)**
+- Full post title and metadata
+- Complete post content with text wrapping
+- URL if external link
+- Scrollable for long content
 
-u/charlie  ⬆ 234
-Thanks for the clear explanation...
-
-b: back | q: quit
-```
+**Right Pane (Comments)**
+- Hierarchical comment tree
+- Indentation shows reply depth
+- Author, score for each comment
+- Collapsible threads with `c` key
+- Scrollable for many comments
 
 ## 🏗️ Architecture
 
-Modern, modular design using Elm Architecture pattern:
+Email client-inspired 3-pane design with simultaneous rendering:
 
 ```
-Model (State)
-    ↓
-Update (Messages) → View (Render)
-    ↑
-Keyboard / API Events
+State Management (Model)
+    ├── Posts List (left pane)
+    │   └── Selected post index
+    ├── Post Details (middle pane) 
+    │   └── Scroll position
+    └── Comments (right pane)
+        └── Scroll position & collapse state
+
+Keyboard Input Routes to Focused Pane
+    ├── PanePostList → Navigate post list
+    ├── PanePostDetail → Scroll content
+    └── PaneComments → Scroll comments / collapse threads
+
+View Renders All 3 Panes Side-by-Side
+    └── JoinHorizontal with border focus indicators
 ```
+
+### Key Differences from v2
+- **v2**: Multi-screen navigation (sequential)
+- **v3**: All content simultaneous (Mutt/Thunderbird style)
+- **v2**: Focus on single content area
+- **v3**: Focus tracking between panes with Tab
 
 ### Components
-- **Post List**: Bubble Tea list component
-- **Search**: Text input for filtering
-- **Subreddit Selector**: Modal text input
-- **Loading**: Animated spinner
-- **Styling**: Professional lipgloss styling
+- **Post List Pane**: Manual rendering for width control
+- **Detail Pane**: Post content with text wrapping
+- **Comments Pane**: Recursive tree rendering with indentation
+- **Styling**: Focused border in orange, unfocused in gray
 
-## 📊 Comparison with v1
+## 📊 Comparison with Previous Versions
 
-| Aspect | v1 | v2 |
-|--------|----|----|
-| Lines of code | 530 | 668 |
-| Architecture | Split-view | Multi-screen |
-| Features | Basic | Comprehensive |
-| Subreddit switching | ❌ | ✅ |
-| Comments | Stub | ✅ |
-| Error handling | Basic | Robust |
-| Code quality | Good | Professional |
+| Aspect | v1 (Split) | v2 (Multi-Screen) | v3 (3-Pane Email) |
+|--------|-----------|------------------|-------------------|
+| Lines of code | 530 | 668 | 848 |
+| Layout | 2 panes | 4 screens sequential | 3 panes simultaneous |
+| Navigation | Screen switching | Screen switching | Tab between panes |
+| Comments visible | Next screen | Next screen | Always visible |
+| Design pattern | Split-view | Elm Multi-screen | Email client (Mutt) |
+| Pane focus | N/A | N/A | Tab cycling with border |
 
 ## 🛠️ Technical Details
 
@@ -212,8 +227,12 @@ API server not running. Make sure it starts with `./launch.sh tui`
 
 ## 🎯 Future Enhancements
 
-- [ ] Full comment tree parsing
-- [ ] Post sorting options
+- [ ] Comment tree collapse/expand toggling
+- [ ] Pane width adjustment with arrow keys
+- [ ] Smooth scrolling within panes
+- [ ] Mark/unmark posts (visual indicator)
+- [ ] Thread count in post titles
+- [ ] Post sorting options (top, new, hot)
 - [ ] Local post caching
 - [ ] Voting/commenting (with auth)
 - [ ] Subreddit favorites
@@ -242,6 +261,7 @@ For issues or questions:
 
 ---
 
-**Version**: 2.0.0  
+**Version**: 3.0.0  
 **Status**: Production Ready  
+**Design**: Email Client-Style 3-Pane (Mutt/Thunderbird inspired)  
 **Last Updated**: February 22, 2026
