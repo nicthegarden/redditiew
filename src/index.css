@@ -604,3 +604,37 @@ body {
   background: var(--accent-orange);
   color: white;
 }
+
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.load-btn {
+  background: var(--accent-orange);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.load-btn:hover {
+  opacity: 0.9;
+}
+
+.load-btn:active {
+  opacity: 0.8;
+}
+
+.empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}

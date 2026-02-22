@@ -326,13 +326,13 @@ export default function App() {
   }, [search, posts, focused])
 
   useEffect(() => {
-    if (listRef.current) {
+    if (listRef.current && selectedIndex >= 0) {
       const items = listRef.current.children
       if (items[selectedIndex]) {
         (items[selectedIndex] as HTMLElement).scrollIntoView({ block: 'nearest' })
       }
     }
-  }, [selectedIndex])
+  }, [selectedIndex, filteredPosts.length])
 
   const filteredPosts = search.trim()
     ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
@@ -374,7 +374,7 @@ export default function App() {
           />
         </div>
         
-        <div className="posts-list" ref={listRef} onScroll={() => {}} onKeyDown={handleKeyDown} tabIndex={0}>
+        <div className="posts-list" ref={listRef} onKeyDown={handleKeyDown} tabIndex={0}>
           {loading && posts.length === 0 && <div className="loading">Loading...</div>}
           {error && posts.length === 0 && <div className="error">⚠️ {error}</div>}
           {filteredPosts.map((p, i) => (
@@ -386,6 +386,13 @@ export default function App() {
           )}
           {isRedditSearch && filteredPosts.length === 0 && posts.length === 0 && (
             <div className="empty">No results found</div>
+          )}
+          {after && !loading && (
+            <div className="load-more">
+              <button onClick={() => fetchPosts(sub, after)} className="load-btn">
+                Load More Posts
+              </button>
+            </div>
           )}
           {loading && posts.length > 0 && <div className="loading">Loading more...</div>}
         </div>
