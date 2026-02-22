@@ -527,7 +527,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.comments = msg.comments
 			m.commentsLoading = false
 			// Calculate max scroll for comments (estimate height as 40 lines visible)
-			m.calculateCommentsMaxScroll(40)
+			m = m.calculateCommentsMaxScroll(40)
 		}
 		return m, nil
 		
@@ -538,7 +538,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Recalculate max scroll for comments on window resize
 		if m.showComments {
 			detailsHeight := m.windowHeight - 8 - (m.windowHeight-8)/2 - 1
-			m.calculateCommentsMaxScroll(detailsHeight)
+			m = m.calculateCommentsMaxScroll(detailsHeight)
 		}
 		return m, nil
 		
@@ -832,10 +832,10 @@ func (m *Model) updateListItems() {
 
 // ============= Helpers =============
 
-func (m *Model) calculateCommentsMaxScroll(height int) {
+func (m Model) calculateCommentsMaxScroll(height int) Model {
 	if len(m.comments) == 0 {
 		m.commentsMaxScroll = 0
-		return
+		return m
 	}
 	
 	// Build comment lines to calculate total
@@ -851,6 +851,7 @@ func (m *Model) calculateCommentsMaxScroll(height int) {
 	}
 	
 	m.commentsMaxScroll = max(0, len(commentLines)-height+4)
+	return m
 }
 
 // ============= Rendering =============
