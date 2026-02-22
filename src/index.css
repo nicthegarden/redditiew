@@ -575,6 +575,85 @@ body {
   .right-pane {
     height: 50%;
   }
+
+  .header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sub-input {
+    font-size: 16px;
+  }
+
+  .quick-links {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .post-title {
+    font-size: 13px;
+    -webkit-line-clamp: 1;
+  }
+
+  .post-meta {
+    font-size: 10px;
+  }
+
+  .post-stats {
+    font-size: 10px;
+  }
+
+  .filter-input {
+    font-size: 16px;
+  }
+
+  .load-btn {
+    font-size: 13px;
+    padding: 8px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .left-pane {
+    height: 40%;
+  }
+  
+  .right-pane {
+    height: 60%;
+  }
+
+  .header {
+    padding: 10px 12px;
+  }
+
+  .quick-links {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .quick-link {
+    padding: 2px 8px;
+    font-size: 11px;
+  }
+
+  .post-item {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .post-thumb {
+    width: 32px;
+    height: 32px;
+  }
+
+  .filter-bar {
+    padding: 6px 12px;
+  }
+
+  .empty {
+    padding: 16px;
+    font-size: 12px;
+  }
 }
 
 .feed-info {
