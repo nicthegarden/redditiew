@@ -2,6 +2,8 @@
 
 **Repository**: [github.com/nicthegarden/redditiew](https://github.com/nicthegarden/redditiew)
 
+**[🎬 Watch Demo Video](https://www.youtube.com/watch?v=upnz0AzVMn8)**
+
 A modern, feature-rich Reddit client available in both Terminal User Interface (TUI) and Web UI formats. Browse Reddit posts, read comments, and open threads directly from your terminal or web browser.
 
 ## 🎯 Features
