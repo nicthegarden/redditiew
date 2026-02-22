@@ -3,6 +3,18 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 const PROXY = 'http://localhost:3001'
 const API_BASE = 'http://localhost:3001/api'
 
+const DEFAULT_SHORTCUTS = {
+  '1': 'sysadmin',
+  '2': 'golang',
+  '3': 'programming',
+  '4': 'linux',
+  '5': 'devops',
+  '6': 'webdev',
+  '7': 'learnprogramming',
+  '8': '100DaysOfCode',
+  '9': 'codereview'
+}
+
 const SUBREDDIT_SUGGESTIONS = [
   'sysadmin', 'IT', 'linux', 'homelab', 'networking', 'devops', 'technology',
   'programming', 'javascript', 'python', 'docker', 'kubernetes', 'aws',
@@ -84,6 +96,8 @@ export default function App() {
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [suggestionIndex, setSuggestionIndex] = useState(-1)
+  const [sort, setSort] = useState('hot')
+  const [shortcuts, setShortcuts] = useState(DEFAULT_SHORTCUTS)
   
   const listRef = useRef(null)
   const searchRef = useRef(null)
@@ -91,9 +105,10 @@ export default function App() {
   const iframeRef = useRef(null)
   const { cached, saveToCache } = usePostCache()
 
-  const fetchPosts = useCallback(async (subreddit, cursor = null) => {
+  const fetchPosts = useCallback(async (subreddit, cursor = null, sortType = 'hot') => {
     const isMore = !!cursor
-    const cachedData = cached[subreddit]
+    const cacheKey = `${subreddit}:${sortType}`
+    const cachedData = cached[cacheKey]
     
     if (!isMore && cachedData && Date.now() - cachedData.time < 3600000) {
       setPosts(cachedData.posts)
@@ -105,7 +120,7 @@ export default function App() {
     
     try {
       const limit = 50
-      const target = `${API_BASE}/r/${subreddit}.json?limit=${limit}${cursor ? '&after=' + cursor : ''}`
+      const target = `${API_BASE}/r/${subreddit}/${sortType}.json?limit=${limit}${cursor ? '&after=' + cursor : ''}`
       const res = await fetch(target)
       if (!res.ok) throw new Error('Failed to load')
       const data = await res.json()
@@ -115,10 +130,11 @@ export default function App() {
         setPosts(prev => [...prev, ...items])
       } else {
         setPosts(items)
-        saveToCache(subreddit, items)
+        saveToCache(cacheKey, items)
       }
       setAfter(data.data.after)
       setSub(subreddit)
+      setSort(sortType)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -126,11 +142,11 @@ export default function App() {
     }
   }, [cached, saveToCache])
 
-  const handleSub = (subreddit) => {
+  const handleSub = (subreddit, sortType = sort) => {
     setInput(subreddit)
     setSelected(null)
     setSelectedIndex(0)
-    fetchPosts(subreddit)
+    fetchPosts(subreddit, null, sortType)
   }
 
   const handleSubmit = (e) => {
@@ -190,8 +206,52 @@ export default function App() {
   }
 
   useEffect(() => {
-    fetchPosts(sub)
+    fetchPosts(sub, null, sort)
   }, [])
+
+  useEffect(() => {
+    // Load config from backend
+    const loadConfig = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/config`)
+        if (res.ok) {
+          const config = await res.json()
+          if (config.tui?.subreddit_shortcuts) {
+            setShortcuts(config.tui.subreddit_shortcuts)
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load config from backend:', err.message)
+        // Fall back to DEFAULT_SHORTCUTS which is already set
+      }
+    }
+    loadConfig()
+  }, [])
+
+  useEffect(() => {
+    const handleShortcuts = (e) => {
+      // 't' key - toggle sort
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault()
+        e.stopPropagation()
+        const newSort = sort === 'hot' ? 'new' : 'hot'
+        fetchPosts(sub, null, newSort)
+        return
+      }
+
+      // '1'-'9' keys - subreddit shortcuts
+      if (e.key >= '1' && e.key <= '9') {
+        const shortcutSub = shortcuts[e.key]
+        if (shortcutSub) {
+          e.preventDefault()
+          e.stopPropagation()
+          handleSub(shortcutSub, sort)
+        }
+      }
+    }
+    document.addEventListener('keydown', handleShortcuts, true)
+    return () => document.removeEventListener('keydown', handleShortcuts, true)
+  }, [sub, sort, handleSub, fetchPosts, shortcuts])
 
   useEffect(() => {
     const handleTab = (e) => {
@@ -279,6 +339,18 @@ export default function App() {
             autoFocus
           />
           <button className="search-btn" tabIndex={-1}>Go</button>
+          <button 
+            type="button"
+            className="sort-btn" 
+            onClick={() => {
+              const newSort = sort === 'hot' ? 'new' : 'hot'
+              fetchPosts(sub, null, newSort)
+            }}
+            tabIndex={-1}
+            title={`Toggle sort (current: ${sort}). Press 't' to toggle`}
+          >
+            {sort === 'hot' ? '📊 Hot' : '🆕 New'}
+          </button>
         </form>
         
         <div className="quick-links" tabIndex={-1}>
