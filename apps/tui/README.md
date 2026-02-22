@@ -38,32 +38,47 @@ npm install && npm run build
 
 ## ⌨️ Keyboard Shortcuts
 
-### Navigation
+### Navigation (List View)
 | Key | Action |
 |-----|--------|
 | `↓` / `j` | Navigate down to next post |
 | `↑` / `k` | Navigate up to previous post |
+| `→` / `l` | Navigate down to next post (alternative) |
+| `←` / `h` | Navigate up to previous post (alternative) |
 | `Home` | Jump to first post |
 | `End` | Jump to last post |
+
+### Navigation (Detail View)
+| Key | Action |
+|-----|--------|
+| `↑` / `k` | Scroll up in post content |
+| `↓` / `j` | Scroll down in post content |
+| `→` / `l` | Jump to next post (change thread) |
+| `←` / `h` | Jump to previous post (change thread) |
+| `PageUp` | Scroll up 10 lines in content |
+| `PageDown` | Scroll down 10 lines in content |
+| `Home` | Jump to top of post content |
+| `End` | Jump to bottom of post content |
+| `Esc` / `Tab` | Return to list view |
 
 ### Search & Filtering
 | Key | Action |
 |-----|--------|
-| `Ctrl+F` | Start search (filter by title/author) |
-| `Esc` | Cancel search |
-| `Enter` | Apply search |
+| `Ctrl+F` | Start search (searches Reddit for matching posts) |
+| `Esc` | Cancel search and return to current posts |
+| `Enter` | Execute Reddit-wide search (fetches new posts matching query) |
 
 ### Subreddit Control
 | Key | Action |
 |-----|--------|
 | `Ctrl+R` | Edit subreddit name |
 | `Esc` | Cancel subreddit edit |
-| `Enter` | Load new subreddit |
+| `Enter` | Load posts from new subreddit |
 
 ### Refresh & Exit
 | Key | Action |
 |-----|--------|
-| `F5` | Refresh current subreddit |
+| `F5` | Refresh posts from current subreddit |
 | `q` | Quit application |
 | `Ctrl+C` | Quit application |
 
@@ -224,7 +239,7 @@ The TUI uses `config.json` in the root directory for customization. Create the f
   "tui": {
     "default_subreddit": "golang",
     "posts_per_page": 50,
-    "list_height": 12,
+    "list_height": 10,
     "max_title_length": 80
   },
   "api": {
@@ -240,7 +255,7 @@ The TUI uses `config.json` in the root directory for customization. Create the f
 |--------|---------|-------------|
 | `default_subreddit` | `"golang"` | Subreddit loaded on startup |
 | `posts_per_page` | `50` | Number of posts to fetch from API |
-| `list_height` | `12` | Maximum visible items in list view |
+| `list_height` | `10` | Maximum visible items in list view (6 in split-view) |
 | `max_title_length` | `80` | Truncate post titles longer than this |
 
 ### API Options
@@ -295,7 +310,17 @@ MIT - See LICENSE file
 
 ---
 
-**Version**: 4.0.0  
+**Version**: 4.1.0  
 **Status**: Production Ready  
 **Design**: Single-Pane List with Expanded Details  
 **Last Updated**: February 22, 2026
+
+---
+
+### v4.1.0 Changes
+- ✅ Reduced list display to 10 items max (6 in split-view) for better readability
+- ✅ Added left/right arrow key navigation (→/←, h/l) to switch between posts
+- ✅ Implemented Page Up/Page Down keys for scrolling post content
+- ✅ Added Reddit-wide search via proxy API (Ctrl+F, then Enter)
+- ✅ Created centralized config.json for both TUI and Web apps
+- ✅ Improved keyboard navigation consistency
