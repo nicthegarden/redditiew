@@ -118,6 +118,10 @@ export default function App() {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [suggestionIndex, setSuggestionIndex] = useState(-1)
   const [isRedditSearch, setIsRedditSearch] = useState(false)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('theme')
+    return (saved as 'dark' | 'light') || 'dark'
+  })
   
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
