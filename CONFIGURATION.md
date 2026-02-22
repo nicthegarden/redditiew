@@ -24,7 +24,19 @@ Configuration is managed through `config.json` in the project root directory.
     "default_subreddit": "sysadmin",
     "posts_per_page": 200,
     "list_height": 10,
-    "max_title_length": 80
+    "max_title_length": 80,
+    "default_sort": "popular",
+    "subreddit_shortcuts": {
+      "1": "sysadmin",
+      "2": "golang",
+      "3": "programming",
+      "4": "linux",
+      "5": "devops",
+      "6": "webdev",
+      "7": "learnprogramming",
+      "8": "100DaysOfCode",
+      "9": "codereview"
+    }
   },
   "web": {
     "default_subreddit": "sysadmin",
@@ -143,7 +155,63 @@ Configuration is managed through `config.json` in the project root directory.
 
 ---
 
-## Web Settings
+### default_sort
+**Type:** `string`  
+**Default:** `"popular"`  
+**Valid Values:** `"popular"`, `"new"`, `"top"`, `"controversial"`, `"rising"`  
+**Description:** Default sorting for posts when loading a subreddit
+
+**Example:**
+```json
+"default_sort": "new"
+```
+
+**Options:**
+- `"popular"` (Hot) - Most upvoted posts
+- `"new"` - Newest posts
+- `"top"` - Top posts (all time)
+- `"controversial"` - Most controversial posts
+- `"rising"` - Rising posts
+
+**Notes:**
+- Can be toggled at runtime with `t` key
+- Current sort preference persists when switching subreddits
+- Maps to Reddit's `/hot`, `/new`, `/top`, etc. endpoints
+
+---
+
+### subreddit_shortcuts
+**Type:** `object` (map of keys to subreddit names)  
+**Default:** See default config above  
+**Description:** Quick keyboard shortcuts to jump to frequently used subreddits
+
+**Example:**
+```json
+"subreddit_shortcuts": {
+  "1": "programming",
+  "2": "golang",
+  "3": "rust",
+  "4": "python",
+  "5": "learnprogramming",
+  "6": "webdev",
+  "7": "devops",
+  "8": "sysadmin",
+  "9": "linux"
+}
+```
+
+**Usage:**
+- Press keys **1-9** to instantly jump to configured subreddit
+- Current sort preference is maintained when switching
+- Search/filter is reset when switching subreddits
+
+**Customization Tips:**
+- Configure shortcuts to your most-used subreddits
+- Remove unused shortcuts by setting to empty object `{}`
+- Keys must be strings "1" through "9"
+- Values must be valid subreddit names (without "r/" prefix)
+
+---
 
 ### default_subreddit (Web)
 **Type:** `string`  
@@ -374,7 +442,19 @@ cat > config.json << 'EOF'
     "default_subreddit": "sysadmin",
     "posts_per_page": 200,
     "list_height": 10,
-    "max_title_length": 80
+    "max_title_length": 80,
+    "default_sort": "popular",
+    "subreddit_shortcuts": {
+      "1": "sysadmin",
+      "2": "golang",
+      "3": "programming",
+      "4": "linux",
+      "5": "devops",
+      "6": "webdev",
+      "7": "learnprogramming",
+      "8": "100DaysOfCode",
+      "9": "codereview"
+    }
   },
   "web": {
     "default_subreddit": "sysadmin",
@@ -454,13 +534,15 @@ Verify the subreddit name:
 
 ## Default Configuration Quick Reference
 
-| Setting | Default | Min | Max |
-|---------|---------|-----|-----|
-| default_subreddit | sysadmin | - | - |
-| posts_per_page | 200 | 10 | 500 |
-| list_height | 10 | 5 | 30 |
-| max_title_length | 80 | 40 | 200 |
-| timeout_seconds | 10 | 5 | 60 |
+| Setting | Default | Notes |
+|---------|---------|-------|
+| default_subreddit | sysadmin | - |
+| posts_per_page | 200 | Range: 10-500 |
+| list_height | 10 | Range: 5-30 |
+| max_title_length | 80 | Range: 40-200 |
+| default_sort | popular | Options: popular, new, top, controversial, rising |
+| subreddit_shortcuts | (see default config) | Keys 1-9 for quick access |
+| timeout_seconds | 10 | Range: 5-60 |
 
 ---
 
