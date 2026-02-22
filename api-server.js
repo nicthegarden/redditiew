@@ -99,16 +99,14 @@ const server = http.createServer(async (req, res) => {
   console.log(`${req.method} ${pathname}`)
 
   try {
-    // Parse subreddit from /api/r/:subreddit or /api/r/:subreddit.json
-    const subredditMatch = pathname.match(/^\/api\/r\/([^/.]+)(\.json)?(?:\/|$)/)
-    if (subredditMatch) {
-      const subreddit = subredditMatch[1]
-      const limit = parsedUrl.query.limit || '50'
-      const after = parsedUrl.query.after ? `&after=${parsedUrl.query.after}` : ''
-      
-      const redditUrl = `https://www.reddit.com/r/${subreddit}.json?limit=${limit}${after}`
+    // Handle comments FIRST (must come before generic subreddit match)
+    // Pattern: /api/r/:subreddit/comments/:id
+    const commentsMatch = pathname.match(/^\/api(\/r\/[^/]+\/comments\/[^/]+\/)/)
+    if (commentsMatch) {
+      const path = commentsMatch[1]
+      const redditUrl = `https://www.reddit.com${path}.json`
       const cacheKey = redditUrl
-      
+
       // Check cache
       const cached = getCache(cacheKey)
       if (cached) {
@@ -132,13 +130,16 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
-    // Handle comments: /api/r/:subreddit/comments/:id
-    const commentsMatch = pathname.match(/^\/api(\/r\/[^/]+\/comments\/[^/]+\/)/)
-    if (commentsMatch) {
-      const path = commentsMatch[1]
-      const redditUrl = `https://www.reddit.com${path}.json`
+    // Parse subreddit from /api/r/:subreddit or /api/r/:subreddit.json
+    const subredditMatch = pathname.match(/^\/api\/r\/([^/.]+)(\.json)?(?:\/|$)/)
+    if (subredditMatch) {
+      const subreddit = subredditMatch[1]
+      const limit = parsedUrl.query.limit || '50'
+      const after = parsedUrl.query.after ? `&after=${parsedUrl.query.after}` : ''
+      
+      const redditUrl = `https://www.reddit.com/r/${subreddit}.json?limit=${limit}${after}`
       const cacheKey = redditUrl
-
+      
       // Check cache
       const cached = getCache(cacheKey)
       if (cached) {

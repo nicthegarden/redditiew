@@ -709,8 +709,9 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		if len(m.filteredPosts) > 0 && m.list.Index() < len(m.filteredPosts) {
 			m.showDetails = true
 			m.detailScrollY = 0
-			post := m.filteredPosts[m.list.Index()]
-			return m, m.loadComments(m.subreddit, post.ID), true
+			// Comments disabled for now - API needs fixing
+			// post := m.filteredPosts[m.list.Index()]
+			// return m, m.loadComments(m.subreddit, post.ID), true
 		}
 		return m, nil, true
 	}
@@ -872,29 +873,8 @@ func (m Model) renderDetailsSection(height int) string {
 		contentLines = append(contentLines, "🔗 "+displayURL)
 	}
 	
-	// Add comments separator
-	if len(m.comments) > 0 {
-		contentLines = append(contentLines, "")
-		contentLines = append(contentLines, "━━━━ TOP COMMENTS ━━━━")
-		contentLines = append(contentLines, "")
-		
-		// Add comments
-		for i, comment := range m.comments {
-			commentText := fmt.Sprintf("💬 u/%s  ⬆ %s", comment.Author, formatNum(comment.Score))
-			contentLines = append(contentLines, commentText)
-			
-			// Wrap comment body
-			body := wrapText(comment.Body, m.windowWidth-6)
-			commentLines := strings.Split(body, "\n")
-			for _, line := range commentLines {
-				contentLines = append(contentLines, "  "+line)
-			}
-			
-			if i < len(m.comments)-1 {
-				contentLines = append(contentLines, "")
-			}
-		}
-	}
+	// Note: Comments section disabled until API endpoint is fixed
+	// Comments fetching and display will be re-enabled in a future update
 	
 	// Apply scrolling
 	startLine := m.detailScrollY
