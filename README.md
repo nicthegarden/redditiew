@@ -25,6 +25,114 @@ A modern, feature-rich Reddit client available in both Terminal User Interface (
 - **Real-time Updates** - Live comment and post data
 - **Customizable Theme** - Light/dark mode support
 
+## 🏗️ Why This Architecture? (Proxy Server Design)
+
+RedditView uses a **local proxy server architecture** instead of direct Reddit API access. Here's why this design is perfect for your niche needs:
+
+### The Problem with Direct Reddit API Access
+- ❌ Reddit's OAuth2 requires user authentication credentials
+- ❌ No "read-only" mode - can't safely embed credentials
+- ❌ Rate limiting per endpoint (60 requests/hour per user)
+- ❌ Complex authentication workflows in terminal
+- ❌ Browser dependencies for OAuth flow
+
+### The Solution: Local Proxy Server
+RedditView solves this by running a **lightweight proxy server** that:
+- ✅ Fetches Reddit data server-side (bypasses client-side auth)
+- ✅ Uses public endpoints (no credentials needed)
+- ✅ Centralizes rate limiting and caching
+- ✅ Works in terminal without browser
+- ✅ Feeds your niche needs: read content without full Reddit UI
+
+### System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        YOU (Your Computer)                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  ┌──────────────┐              ┌─────────────────────────────┐  │
+│  │   TUI App    │              │    Web Browser/UI           │  │
+│  │  (Go Binary) │              │  (Node.js/React Frontend)   │  │
+│  │              │              │                             │  │
+│  │  • Terminal  │              │  • Modern responsive UI     │  │
+│  │  • Keyboard  │              │  • Mouse friendly           │  │
+│  │  • Full TTY  │              │  • Same data backend        │  │
+│  └──────┬───────┘              └────────────┬────────────────┘  │
+│         │                                    │                   │
+│         └────────────────┬───────────────────┘                   │
+│                          │                                       │
+│                          ▼                                       │
+│         ┌────────────────────────────────┐                      │
+│         │   LOCAL PROXY SERVER (Node.js) │                      │
+│         │   Running on localhost:3002    │                      │
+│         │                                │                      │
+│         │  • Caches Reddit data          │                      │
+│         │  • Handles rate limiting       │                      │
+│         │  • Provides REST API           │                      │
+│         │  • No credentials needed       │                      │
+│         └───────────┬────────────────────┘                      │
+│                     │                                           │
+└─────────────────────┼───────────────────────────────────────────┘
+                      │
+                      │ (Your Internet Connection)
+                      │
+                      ▼
+            ┌──────────────────┐
+            │  reddit.com API  │
+            │  Public Endpoints│
+            │  (No Auth)       │
+            └──────────────────┘
+```
+
+### How It Works
+
+**1. Data Flow**
+```
+Terminal/Browser → Local Proxy → Reddit Public API → Local Proxy → Display
+```
+
+**2. Request Example**
+```
+You: "Show me posts from r/sysadmin"
+      ↓
+TUI/Web: GET http://localhost:3002/api/r/sysadmin.json
+      ↓
+Proxy Server:
+  - Checks if cached (serve instantly)
+  - If not cached, fetches from Reddit
+  - Caches result (next request is instant)
+  - Returns JSON to your app
+      ↓
+TUI/Web: Displays posts beautifully
+```
+
+**3. Why This Benefits You**
+- **Zero Configuration** - No API keys, no OAuth flow
+- **Lightning Fast** - Results cached locally
+- **Multiple Interfaces** - Same backend, different UIs
+- **Offline-ish** - Cached data available without internet
+- **Privacy Friendly** - No third-party tracking
+- **Self-Contained** - Everything runs locally
+
+### Components
+
+| Component | Language | Purpose |
+|-----------|----------|---------|
+| **TUI Application** | Go | Terminal interface with Bubble Tea framework |
+| **Proxy Server** | Node.js/Express | Local API server, caching, rate limiting |
+| **Web UI** | Node.js/React | Browser-based interface (same backend) |
+
+### Key Design Benefits
+
+✅ **Simplicity** - One local server, multiple clients
+✅ **Performance** - Built-in caching layer
+✅ **Flexibility** - Easy to add new interfaces (CLI, Web, Desktop, etc.)
+✅ **Reliability** - No network dependency for cached data
+✅ **Scalability** - Can serve multiple instances
+
+---
+
 ## 📸 Screenshots
 
 ### TUI - Post List View
