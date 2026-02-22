@@ -10,11 +10,11 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/charmbracelet/bubbles/spinner"
 )
 
 // ============= Constants =============
@@ -23,41 +23,41 @@ const apiBaseURL = "http://localhost:3002/api"
 
 var (
 	// Colors
-	colorOrange = lipgloss.Color("#FF4500")
+	colorOrange     = lipgloss.Color("#FF4500")
 	colorOrangeDark = lipgloss.Color("#FF6B35")
-	colorGold = lipgloss.Color("#FFD700")
-	colorGreen = lipgloss.Color("#90EE90")
-	colorWhite = lipgloss.Color("#FFFFFF")
-	colorGray = lipgloss.Color("#CCCCCC")
-	colorDarkGray = lipgloss.Color("#333333")
-	colorBlack = lipgloss.Color("#000000")
-	colorBlue = lipgloss.Color("#87CEEB")
-	colorRed = lipgloss.Color("#FF0000")
-	
+	colorGold       = lipgloss.Color("#FFD700")
+	colorGreen      = lipgloss.Color("#90EE90")
+	colorWhite      = lipgloss.Color("#FFFFFF")
+	colorGray       = lipgloss.Color("#CCCCCC")
+	colorDarkGray   = lipgloss.Color("#333333")
+	colorBlack      = lipgloss.Color("#000000")
+	colorBlue       = lipgloss.Color("#87CEEB")
+	colorRed        = lipgloss.Color("#FF0000")
+
 	// Styles
 	headerStyle = lipgloss.NewStyle().
-		Background(colorOrange).
-		Foreground(colorWhite).
-		Bold(true).
-		Padding(0, 1)
-	
+			Background(colorOrange).
+			Foreground(colorWhite).
+			Bold(true).
+			Padding(0, 1)
+
 	selectedStyle = lipgloss.NewStyle().
-		Background(colorOrangeDark).
-		Foreground(colorWhite).
-		Bold(true)
-	
+			Background(colorOrangeDark).
+			Foreground(colorWhite).
+			Bold(true)
+
 	footerStyle = lipgloss.NewStyle().
-		Background(colorDarkGray).
-		Foreground(colorWhite).
-		Padding(0, 1)
-	
+			Background(colorDarkGray).
+			Foreground(colorWhite).
+			Padding(0, 1)
+
 	focusedStyle = lipgloss.NewStyle().
-		Foreground(colorOrange).
-		Bold(true)
-	
+			Foreground(colorOrange).
+			Bold(true)
+
 	errorStyle = lipgloss.NewStyle().
-		Foreground(colorRed).
-		Bold(true)
+			Foreground(colorRed).
+			Bold(true)
 )
 
 // ============= Configuration =============
@@ -97,12 +97,12 @@ func loadConfig() error {
 		appConfig.API.TimeoutSeconds = 10
 		return nil
 	}
-	
+
 	err = json.Unmarshal(data, &appConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse config.json: %w", err)
 	}
-	
+
 	// Set defaults for any missing values
 	if appConfig.TUI.DefaultSubreddit == "" {
 		appConfig.TUI.DefaultSubreddit = "sysadmin"
@@ -122,7 +122,7 @@ func loadConfig() error {
 	if appConfig.API.TimeoutSeconds == 0 {
 		appConfig.API.TimeoutSeconds = 10
 	}
-	
+
 	return nil
 }
 
@@ -142,7 +142,7 @@ type RedditPostData struct {
 }
 
 type RedditPost struct {
-	Kind string           `json:"kind"`
+	Kind string         `json:"kind"`
 	Data RedditPostData `json:"data"`
 }
 
@@ -221,12 +221,12 @@ func (c *APIClient) SearchPosts(query string) ([]RedditPostData, error) {
 	if query == "" {
 		return []RedditPostData{}, nil
 	}
-	
-	searchURL := fmt.Sprintf("%s/search.json?q=%s&type=link&limit=%d", 
-		c.baseURL, 
+
+	searchURL := fmt.Sprintf("%s/search.json?q=%s&type=link&limit=%d",
+		c.baseURL,
 		url.QueryEscape(query),
 		appConfig.TUI.PostsPerPage)
-	
+
 	resp, err := http.Get(searchURL)
 	if err != nil {
 		return nil, err
@@ -253,7 +253,7 @@ func (c *APIClient) SearchPosts(query string) ([]RedditPostData, error) {
 // FetchComments fetches top-level comments for a post
 func (c *APIClient) FetchComments(subreddit, postID string) ([]*Comment, error) {
 	commentsURL := fmt.Sprintf("%s/r/%s/comments/%s/", c.baseURL, subreddit, postID)
-	
+
 	resp, err := http.Get(commentsURL)
 	if err != nil {
 		return nil, err
@@ -265,7 +265,7 @@ func (c *APIClient) FetchComments(subreddit, postID string) ([]*Comment, error) 
 	// Try to parse as array first (Reddit's native format)
 	var resultArray []map[string]interface{}
 	var resultSingle map[string]interface{}
-	
+
 	// Try array format first
 	if err := json.Unmarshal(data, &resultArray); err == nil && len(resultArray) >= 2 {
 		// Reddit returns [posts, comments] format
@@ -275,7 +275,7 @@ func (c *APIClient) FetchComments(subreddit, postID string) ([]*Comment, error) 
 			return parseComments(dataMap)
 		}
 	}
-	
+
 	// Fall back to single object format
 	if err := json.Unmarshal(data, &resultSingle); err == nil {
 		if dataField, ok := resultSingle["data"]; ok {
@@ -299,7 +299,7 @@ func parseComments(dataMap map[string]interface{}) ([]*Comment, error) {
 		if !ok {
 			continue
 		}
-		
+
 		kind, ok := childMap["kind"].(string)
 		if !ok || kind != "t1" {
 			continue // Skip non-comments
@@ -352,7 +352,7 @@ func openURL(urlStr string) error {
 	if urlStr == "" {
 		return fmt.Errorf("empty URL")
 	}
-	
+
 	// Determine the command based on OS
 	var cmd *exec.Cmd
 	switch os.Getenv("GOOS") {
@@ -364,7 +364,7 @@ func openURL(urlStr string) error {
 		// Linux and other Unix-like systems
 		cmd = exec.Command("xdg-open", urlStr)
 	}
-	
+
 	return cmd.Run()
 }
 
@@ -374,38 +374,38 @@ type Model struct {
 	// Post Management
 	posts         []RedditPostData
 	filteredPosts []RedditPostData
-	
+
 	// Comments
-	comments         []*Comment
-	showComments     bool
-	commentsScrollY  int
+	comments          []*Comment
+	showComments      bool
+	commentsScrollY   int
 	commentsMaxScroll int
-	commentsLoading  bool
-	
+	commentsLoading   bool
+
 	// List component
 	list list.Model
-	
+
 	// UI Components
 	searchInput    textinput.Model
 	subredditInput textinput.Model
 	spinner        spinner.Model
-	
+
 	// State
-	subreddit     string
-	loading       bool
-	error         string
-	searching     bool
-	selectingSub  bool
-	showDetails   bool
-	
+	subreddit    string
+	loading      bool
+	error        string
+	searching    bool
+	selectingSub bool
+	showDetails  bool
+
 	// Detail view scroll
-	detailScrollY int
+	detailScrollY   int
 	detailMaxScroll int
-	
+
 	// Layout
 	windowWidth  int
 	windowHeight int
-	
+
 	// API
 	client *APIClient
 }
@@ -413,21 +413,21 @@ type Model struct {
 func initialModel() Model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	
+
 	searchInput := textinput.New()
 	searchInput.Placeholder = "Search posts..."
 	searchInput.CharLimit = 100
-	
+
 	subInput := textinput.New()
 	subInput.Placeholder = "Enter subreddit (e.g., golang, rust)..."
 	subInput.CharLimit = 50
-	
+
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	l.Title = ""
 	l.SetFilteringEnabled(false)
 	l.SetShowFilter(false)
 	l.DisableQuitKeybindings()
-	
+
 	m := Model{
 		client:         NewAPIClient(),
 		subreddit:      appConfig.TUI.DefaultSubreddit,
@@ -440,7 +440,7 @@ func initialModel() Model {
 		windowHeight:   40,
 		showDetails:    false,
 	}
-	
+
 	return m
 }
 
@@ -452,9 +452,9 @@ type postsLoadedMsg struct {
 }
 
 type searchResultsMsg struct {
-	posts  []RedditPostData
-	query  string
-	error  error
+	posts []RedditPostData
+	query string
+	error error
 }
 
 type commentsLoadedMsg struct {
@@ -507,7 +507,7 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var handled bool
-	
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		m, cmd, handled = m.handleKeyPress(msg)
@@ -515,7 +515,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, cmd
 		}
 		// If not handled, fall through to list update
-		
+
 	case postsLoadedMsg:
 		if msg.error != nil {
 			m.error = msg.error.Error()
@@ -528,7 +528,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.showDetails = false
 		m.detailScrollY = 0
 		return m, nil
-	
+
 	case searchResultsMsg:
 		if msg.error != nil {
 			m.error = msg.error.Error()
@@ -541,7 +541,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.showDetails = false
 		m.detailScrollY = 0
 		return m, nil
-	
+
 	case commentsLoadedMsg:
 		if msg.error != nil {
 			m.error = msg.error.Error()
@@ -554,7 +554,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m = m.calculateCommentsMaxScroll(detailsHeight)
 		}
 		return m, nil
-		
+
 	case tea.WindowSizeMsg:
 		m.windowWidth = msg.Width
 		m.windowHeight = msg.Height
@@ -565,17 +565,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m = m.calculateCommentsMaxScroll(detailsHeight)
 		}
 		return m, nil
-		
+
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 	}
-	
+
 	// List update for navigation keys
 	if !m.showDetails && !m.searching && !m.selectingSub {
 		m.list, cmd = m.list.Update(msg)
 	}
-	
+
 	return m, cmd
 }
 
@@ -588,8 +588,12 @@ func (m *Model) updateListSize() {
 		}
 		m.list.SetSize(m.windowWidth-2, listHeight)
 	} else {
-		// Show full list: limit to 10 items for better readability
-		listHeight := min(10, m.windowHeight-8)
+		// Show full list: responsive height based on terminal size
+		// Reserve 5 lines for header, info bar, and footer
+		listHeight := m.windowHeight - 5
+		if listHeight < 3 {
+			listHeight = 3 // Ensure minimum of 3 items visible
+		}
 		m.list.SetSize(m.windowWidth-2, listHeight)
 	}
 }
@@ -617,7 +621,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		m.subredditInput, cmd = m.subredditInput.Update(msg)
 		return m, cmd, true
 	}
-	
+
 	// Handle search
 	if m.searching {
 		switch msg.String() {
@@ -642,7 +646,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		m.filterPosts(m.searchInput.Value())
 		return m, cmd, true
 	}
-	
+
 	// Detail view navigation
 	if m.showDetails {
 		switch msg.String() {
@@ -765,7 +769,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 			return m, nil, true
 		}
 	}
-	
+
 	// Global shortcuts (also support left/right to navigate in list view)
 	switch msg.String() {
 	case "left", "h":
@@ -785,7 +789,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 			return m, nil, true
 		}
 	}
-	
+
 	// Global shortcuts (remaining)
 	switch msg.String() {
 	case "ctrl+c", "q":
@@ -845,7 +849,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		}
 		return m, nil, true
 	}
-	
+
 	// Key not handled - let list component handle it
 	return m, nil, false
 }
@@ -881,7 +885,7 @@ func (m Model) calculateCommentsMaxScroll(height int) Model {
 		m.commentsMaxScroll = 0
 		return m
 	}
-	
+
 	// Build comment lines to calculate total
 	var commentLines []string
 	for _, comment := range m.comments {
@@ -893,7 +897,7 @@ func (m Model) calculateCommentsMaxScroll(height int) Model {
 		}
 		commentLines = append(commentLines, "") // Blank line between comments
 	}
-	
+
 	m.commentsMaxScroll = max(0, len(commentLines)-height+4)
 	return m
 }
@@ -904,11 +908,11 @@ func (m Model) View() string {
 	if m.error != "" {
 		return m.renderError()
 	}
-	
+
 	if m.loading {
 		return m.renderLoading()
 	}
-	
+
 	return m.renderMain()
 }
 
@@ -926,7 +930,7 @@ func (m Model) renderLoading() string {
 func (m *Model) renderMain() string {
 	// Header
 	header := headerStyle.Render(fmt.Sprintf("  🔥 r/%s  %d posts", m.subreddit, len(m.filteredPosts)))
-	
+
 	// Info bar
 	var infoBar string
 	if m.searching {
@@ -942,7 +946,7 @@ func (m *Model) renderMain() string {
 	} else {
 		infoBar = m.renderInfoBar()
 	}
-	
+
 	// Content
 	var content string
 	if m.showDetails && len(m.filteredPosts) > 0 {
@@ -950,10 +954,10 @@ func (m *Model) renderMain() string {
 	} else {
 		content = m.renderListOnly()
 	}
-	
+
 	// Footer
 	footer := m.renderFooter()
-	
+
 	return fmt.Sprintf("%s\n%s\n%s\n%s", header, infoBar, content, footer)
 }
 
@@ -979,10 +983,10 @@ func (m *Model) renderWithDetails() string {
 	// Split view: list on top, details on bottom
 	listHeight := (m.windowHeight - 8) / 2
 	detailsHeight := m.windowHeight - 8 - listHeight - 1
-	
+
 	m.list.SetSize(m.windowWidth-2, listHeight)
 	listView := m.list.View()
-	
+
 	// Details section or comments
 	var contentView string
 	if m.showComments {
@@ -990,11 +994,11 @@ func (m *Model) renderWithDetails() string {
 	} else {
 		contentView = m.renderDetailsSection(detailsHeight)
 	}
-	
+
 	separator := lipgloss.NewStyle().
 		Foreground(colorOrange).
 		Render(strings.Repeat("─", m.windowWidth-2))
-	
+
 	return fmt.Sprintf("%s\n%s\n%s", listView, separator, contentView)
 }
 
@@ -1013,10 +1017,10 @@ func (m Model) renderCommentsPanel(height int) string {
 			Height(height).
 			Render("💬 No comments found")
 	}
-	
+
 	var sb strings.Builder
 	sb.WriteString(focusedStyle.Render("💬 Comments\n\n"))
-	
+
 	// Build comment lines
 	var commentLines []string
 	for _, comment := range m.comments {
@@ -1024,7 +1028,7 @@ func (m Model) renderCommentsPanel(height int) string {
 		authorLine := lipgloss.NewStyle().Foreground(colorGold).Render(
 			fmt.Sprintf("👤 u/%s  •  ⬆ %s", comment.Author, formatNum(comment.Score)))
 		commentLines = append(commentLines, authorLine)
-		
+
 		// Comment body with wrapping
 		if comment.Body != "" {
 			wrapped := wrapText(comment.Body, m.windowWidth-6)
@@ -1035,19 +1039,19 @@ func (m Model) renderCommentsPanel(height int) string {
 		}
 		commentLines = append(commentLines, "") // Blank line between comments
 	}
-	
+
 	// Apply scrolling
 	startLine := m.commentsScrollY
 	endLine := startLine + height - 4
 	if endLine > len(commentLines) {
 		endLine = len(commentLines)
 	}
-	
+
 	if startLine < len(commentLines) {
 		visibleLines := commentLines[startLine:endLine]
 		sb.WriteString(strings.Join(visibleLines, "\n"))
 	}
-	
+
 	return lipgloss.NewStyle().
 		Foreground(colorGray).
 		Padding(0, 1).
@@ -1059,26 +1063,26 @@ func (m Model) renderDetailsSection(height int) string {
 	if m.list.Index() >= len(m.filteredPosts) {
 		return ""
 	}
-	
+
 	post := m.filteredPosts[m.list.Index()]
-	
+
 	var sb strings.Builder
-	
+
 	// Title
 	sb.WriteString(focusedStyle.Render(fmt.Sprintf("📄 %s\n", post.Title)))
-	
+
 	// Meta
 	sb.WriteString(lipgloss.NewStyle().Foreground(colorGold).Render(
 		fmt.Sprintf("👤 u/%s  •  r/%s  •  ⬆ %s  •  💬 %s\n\n",
 			post.Author, post.SubName, formatNum(post.Score), formatNum(post.Comments))))
-	
+
 	// Content
 	var contentLines []string
 	if post.SelfText != "" {
 		content := wrapText(post.SelfText, m.windowWidth-4)
 		contentLines = strings.Split(content, "\n")
 	}
-	
+
 	// Add URL if present
 	if post.URL != "" && !strings.HasPrefix(post.URL, "https://www.reddit.com") {
 		contentLines = append(contentLines, "")
@@ -1088,25 +1092,25 @@ func (m Model) renderDetailsSection(height int) string {
 		}
 		contentLines = append(contentLines, "🔗 "+displayURL)
 	}
-	
+
 	// Note: Comments section disabled until API endpoint is fixed
 	// Comments fetching and display will be re-enabled in a future update
-	
+
 	// Apply scrolling
 	startLine := m.detailScrollY
 	endLine := startLine + height - 3
 	if endLine > len(contentLines) {
 		endLine = len(contentLines)
 	}
-	
+
 	// Calculate max scroll
 	m.detailMaxScroll = max(0, len(contentLines)-height+3)
-	
+
 	if startLine < len(contentLines) {
 		visibleLines := contentLines[startLine:endLine]
 		sb.WriteString(strings.Join(visibleLines, "\n"))
 	}
-	
+
 	return lipgloss.NewStyle().
 		Foreground(colorGray).
 		Padding(0, 1).
@@ -1121,12 +1125,12 @@ func (m Model) renderFooter() string {
 		}
 		return footerStyle.Render("↑↓: scroll details  •  h/l: switch posts  •  w: open URL  •  Esc/Tab: back to list  •  c: view comments  •  q: quit")
 	}
-	
+
 	status := "no posts"
 	if len(m.filteredPosts) > 0 {
 		status = fmt.Sprintf("%d/%d", m.list.Index()+1, len(m.filteredPosts))
 	}
-	
+
 	return footerStyle.Render(fmt.Sprintf("Post %s  •  Enter: view details  •  w: open URL  •  Ctrl+F: search  •  F5: refresh  •  q: quit", status))
 }
 
@@ -1136,11 +1140,11 @@ func wrapText(text string, width int) string {
 	if width <= 0 || text == "" {
 		return ""
 	}
-	
+
 	words := strings.Fields(text)
 	var lines []string
 	var currentLine string
-	
+
 	for _, word := range words {
 		if len(currentLine)+len(word)+1 > width {
 			if currentLine != "" {
@@ -1157,7 +1161,7 @@ func wrapText(text string, width int) string {
 	if currentLine != "" {
 		lines = append(lines, currentLine)
 	}
-	
+
 	return strings.Join(lines, "\n")
 }
 
@@ -1192,7 +1196,7 @@ func main() {
 	if err := loadConfig(); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not load config.json: %v\n", err)
 	}
-	
+
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
