@@ -6,7 +6,7 @@
     "max_title_length": 80
   },
   "web": {
-    "default_subreddit": "golang",
+    "default_subreddit": "sysadmin",
     "posts_per_page": 20,
     "theme": "dark"
   },

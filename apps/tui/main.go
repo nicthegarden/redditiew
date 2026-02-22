@@ -260,28 +260,44 @@ func (c *APIClient) FetchComments(subreddit, postID string) ([]*Comment, error) 
 
 	data, _ := io.ReadAll(resp.Body)
 
-	// Reddit returns an array with [posts, comments]
-	var result []map[string]interface{}
-	if err := json.Unmarshal(data, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse comments: %w", err)
+	// Try to parse as array first (Reddit's native format)
+	var resultArray []map[string]interface{}
+	var resultSingle map[string]interface{}
+	
+	// Try array format first
+	if err := json.Unmarshal(data, &resultArray); err == nil && len(resultArray) >= 2 {
+		// Reddit returns [posts, comments] format
+		commentsData := resultArray[1]
+		if dataField, ok := commentsData["data"]; ok {
+			dataMap := dataField.(map[string]interface{})
+			return parseComments(dataMap)
+		}
+	}
+	
+	// Fall back to single object format
+	if err := json.Unmarshal(data, &resultSingle); err == nil {
+		if dataField, ok := resultSingle["data"]; ok {
+			dataMap := dataField.(map[string]interface{})
+			return parseComments(dataMap)
+		}
 	}
 
-	if len(result) < 2 {
+	return nil, nil
+}
+
+func parseComments(dataMap map[string]interface{}) ([]*Comment, error) {
+	childrenInterface, ok := dataMap["children"].([]interface{})
+	if !ok {
 		return nil, nil
 	}
-
-	// Extract comments from the second element
-	commentsData := result[1]
-	if _, ok := commentsData["data"]; !ok {
-		return nil, nil
-	}
-
-	dataMap := commentsData["data"].(map[string]interface{})
-	childrenInterface := dataMap["children"].([]interface{})
 
 	comments := make([]*Comment, 0)
 	for _, childInterface := range childrenInterface {
-		childMap := childInterface.(map[string]interface{})
+		childMap, ok := childInterface.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		
 		kind, ok := childMap["kind"].(string)
 		if !ok || kind != "t1" {
 			continue // Skip non-comments

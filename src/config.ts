@@ -33,9 +33,9 @@ export async function loadConfig(): Promise<AppConfig> {
     console.warn('Could not load config.json, using defaults:', error)
     config = {
       tui: {
-        default_subreddit: 'golang',
+        default_subreddit: 'sysadmin',
         posts_per_page: 50,
-        list_height: 12,
+        list_height: 10,
         max_title_length: 80,
       },
       web: {
