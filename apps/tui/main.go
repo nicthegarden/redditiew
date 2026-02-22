@@ -64,10 +64,12 @@ var (
 
 type AppConfig struct {
 	TUI struct {
-		DefaultSubreddit string `json:"default_subreddit"`
-		PostsPerPage     int    `json:"posts_per_page"`
-		ListHeight       int    `json:"list_height"`
-		MaxTitleLength   int    `json:"max_title_length"`
+		DefaultSubreddit   string            `json:"default_subreddit"`
+		PostsPerPage       int               `json:"posts_per_page"`
+		ListHeight         int               `json:"list_height"`
+		MaxTitleLength     int               `json:"max_title_length"`
+		DefaultSort        string            `json:"default_sort"`
+		SubredditShortcuts map[string]string `json:"subreddit_shortcuts"`
 	} `json:"tui"`
 	Web struct {
 		DefaultSubreddit string `json:"default_subreddit"`
@@ -115,6 +117,12 @@ func loadConfig() error {
 	}
 	if appConfig.TUI.MaxTitleLength == 0 {
 		appConfig.TUI.MaxTitleLength = 80
+	}
+	if appConfig.TUI.DefaultSort == "" {
+		appConfig.TUI.DefaultSort = "popular"
+	}
+	if appConfig.TUI.SubredditShortcuts == nil {
+		appConfig.TUI.SubredditShortcuts = make(map[string]string)
 	}
 	if appConfig.API.BaseURL == "" {
 		appConfig.API.BaseURL = "http://localhost:3002/api"
@@ -192,8 +200,13 @@ func NewAPIClient() *APIClient {
 	return &APIClient{baseURL: appConfig.API.BaseURL}
 }
 
-func (c *APIClient) FetchPosts(subreddit string) ([]RedditPostData, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/r/%s.json?limit=%d", c.baseURL, subreddit, appConfig.TUI.PostsPerPage))
+func (c *APIClient) FetchPosts(subreddit, sort string) ([]RedditPostData, error) {
+	// sort can be: "popular" (hot), "new", "top", "controversial", "rising"
+	// Default to "hot" if not specified
+	if sort == "" || sort == "popular" {
+		sort = "hot"
+	}
+	resp, err := http.Get(fmt.Sprintf("%s/r/%s/%s.json?limit=%d", c.baseURL, subreddit, sort, appConfig.TUI.PostsPerPage))
 	if err != nil {
 		return nil, err
 	}
@@ -392,6 +405,7 @@ type Model struct {
 
 	// State
 	subreddit    string
+	sort         string // "popular" or "new"
 	loading      bool
 	error        string
 	searching    bool
@@ -431,6 +445,7 @@ func initialModel() Model {
 	m := Model{
 		client:         NewAPIClient(),
 		subreddit:      appConfig.TUI.DefaultSubreddit,
+		sort:           appConfig.TUI.DefaultSort,
 		spinner:        s,
 		searchInput:    searchInput,
 		subredditInput: subInput,
@@ -464,9 +479,9 @@ type commentsLoadedMsg struct {
 
 // ============= Commands =============
 
-func (m Model) loadPosts(subreddit string) tea.Cmd {
+func (m Model) loadPosts(subreddit, sort string) tea.Cmd {
 	return func() tea.Msg {
-		posts, err := m.client.FetchPosts(subreddit)
+		posts, err := m.client.FetchPosts(subreddit, sort)
 		if err != nil {
 			return postsLoadedMsg{nil, err}
 		}
@@ -498,7 +513,7 @@ func (m Model) loadComments(subreddit, postID string) tea.Cmd {
 
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
-		m.loadPosts(m.subreddit),
+		m.loadPosts(m.subreddit, m.sort),
 		m.spinner.Tick,
 		tea.EnterAltScreen,
 	)
@@ -614,7 +629,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 				m.selectingSub = false
 				m.loading = true
 				m.showDetails = false
-				return m, m.loadPosts(newSub), true
+				return m, m.loadPosts(newSub, m.sort), true
 			}
 		}
 		var cmd tea.Cmd
@@ -660,26 +675,48 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 			m.detailScrollY = 0
 			return m, nil, true
 		case "up":
-			// Up arrow: scroll comments if open, else scroll details
-			if m.showComments {
-				if m.commentsScrollY > 0 {
-					m.commentsScrollY--
+			// Up arrow: navigate posts if not showing details, else scroll content
+			if !m.showDetails && len(m.filteredPosts) > 0 {
+				// Navigate to previous post
+				idx := m.list.Index()
+				if idx > 0 {
+					m.list.CursorUp()
+					m.detailScrollY = 0
+					m.commentsScrollY = 0
 				}
-			} else {
-				if m.detailScrollY > 0 {
-					m.detailScrollY--
+			} else if m.showDetails {
+				// Scroll content when details are shown
+				if m.showComments {
+					if m.commentsScrollY > 0 {
+						m.commentsScrollY--
+					}
+				} else {
+					if m.detailScrollY > 0 {
+						m.detailScrollY--
+					}
 				}
 			}
 			return m, nil, true
 		case "down":
-			// Down arrow: scroll comments if open, else scroll details
-			if m.showComments {
-				if m.commentsScrollY < m.commentsMaxScroll {
-					m.commentsScrollY++
+			// Down arrow: navigate posts if not showing details, else scroll content
+			if !m.showDetails && len(m.filteredPosts) > 0 {
+				// Navigate to next post
+				idx := m.list.Index()
+				if idx < len(m.filteredPosts)-1 {
+					m.list.CursorDown()
+					m.detailScrollY = 0
+					m.commentsScrollY = 0
 				}
-			} else {
-				if m.detailScrollY < m.detailMaxScroll {
-					m.detailScrollY++
+			} else if m.showDetails {
+				// Scroll content when details are shown
+				if m.showComments {
+					if m.commentsScrollY < m.commentsMaxScroll {
+						m.commentsScrollY++
+					}
+				} else {
+					if m.detailScrollY < m.detailMaxScroll {
+						m.detailScrollY++
+					}
 				}
 			}
 			return m, nil, true
@@ -806,7 +843,17 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 	case "f5":
 		m.loading = true
 		m.showDetails = false
-		return m, m.loadPosts(m.subreddit), true
+		return m, m.loadPosts(m.subreddit, m.sort), true
+	case "t":
+		// Toggle between popular and new posts
+		if m.sort == "popular" {
+			m.sort = "new"
+		} else {
+			m.sort = "popular"
+		}
+		m.loading = true
+		m.showDetails = false
+		return m, m.loadPosts(m.subreddit, m.sort), true
 	case "c":
 		if m.showComments {
 			// Close comments panel
@@ -848,6 +895,16 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (Model, tea.Cmd, bool) {
 			m.showComments = false
 		}
 		return m, nil, true
+	// Subreddit shortcuts (1-9 keys)
+	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+		if sub, exists := appConfig.TUI.SubredditShortcuts[msg.String()]; exists {
+			m.subreddit = sub
+			m.loading = true
+			m.showDetails = false
+			m.searchInput.Reset()
+			m.searching = false
+			return m, m.loadPosts(sub, m.sort), true
+		}
 	}
 
 	// Key not handled - let list component handle it
@@ -1121,9 +1178,9 @@ func (m Model) renderDetailsSection(height int) string {
 func (m Model) renderFooter() string {
 	if m.showDetails {
 		if m.showComments {
-			return footerStyle.Render("↑↓: scroll comments  •  h/l: switch posts  •  w: open URL  •  Esc: close comments  •  Ctrl+F: search  •  q: quit")
+			return footerStyle.Render("↑↓: scroll comments  •  h/l: switch posts  •  w: open URL  •  Esc: close comments  •  Ctrl+F: search  •  t: toggle sort  •  q: quit")
 		}
-		return footerStyle.Render("↑↓: scroll details  •  h/l: switch posts  •  w: open URL  •  Esc/Tab: back to list  •  c: view comments  •  q: quit")
+		return footerStyle.Render("↑↓: scroll details  •  h/l: switch posts  •  w: open URL  •  Esc/Tab: back to list  •  c: view comments  •  t: toggle sort  •  q: quit")
 	}
 
 	status := "no posts"
@@ -1131,7 +1188,13 @@ func (m Model) renderFooter() string {
 		status = fmt.Sprintf("%d/%d", m.list.Index()+1, len(m.filteredPosts))
 	}
 
-	return footerStyle.Render(fmt.Sprintf("Post %s  •  Enter: view details  •  w: open URL  •  Ctrl+F: search  •  F5: refresh  •  q: quit", status))
+	// Show current sort in footer
+	sortLabel := "📊 Hot"
+	if m.sort == "new" {
+		sortLabel = "🆕 New"
+	}
+
+	return footerStyle.Render(fmt.Sprintf("Post %s [%s]  •  Enter: view  •  1-9: subreddit  •  t: toggle sort  •  F5: refresh  •  q: quit", status, sortLabel))
 }
 
 // ============= Utilities =============
