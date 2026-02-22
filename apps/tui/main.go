@@ -526,8 +526,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.comments = msg.comments
 			m.commentsLoading = false
-			// Calculate max scroll for comments (estimate height as 40 lines visible)
-			m = m.calculateCommentsMaxScroll(40)
+			// Calculate max scroll for comments using actual details height
+			listHeight := (m.windowHeight - 8) / 2
+			detailsHeight := m.windowHeight - 8 - listHeight - 1
+			m = m.calculateCommentsMaxScroll(detailsHeight)
 		}
 		return m, nil
 		
