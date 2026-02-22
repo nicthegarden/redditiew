@@ -1202,6 +1202,26 @@ func (m Model) renderDetailsSection(height int) string {
 func (m Model) renderFooter() string {
 	if m.showDetails {
 		if m.showComments {
+			// Check for comment boundary warnings
+			atTopOfComments := m.commentsScrollY == 0
+			atBottomOfComments := m.commentsScrollY >= m.commentsMaxScroll
+
+			var warningStyle lipgloss.Style
+			var footerText string
+
+			if atTopOfComments && m.list.Index() > 0 {
+				// At top of comments with previous post available
+				warningStyle = lipgloss.NewStyle().Foreground(colorOrange)
+				footerText = "⚠️  Next ↑ will load previous post  •  h/l: switch posts  •  w: open URL  •  Esc: close comments  •  Ctrl+F: search  •  t: toggle sort  •  q: quit"
+				return warningStyle.Render(footerText)
+			} else if atBottomOfComments && m.list.Index() < len(m.filteredPosts)-1 {
+				// At bottom of comments with next post available
+				warningStyle = lipgloss.NewStyle().Foreground(colorOrange)
+				footerText = "⚠️  Next ↓ will load next post  •  h/l: switch posts  •  w: open URL  •  Esc: close comments  •  Ctrl+F: search  •  t: toggle sort  •  q: quit"
+				return warningStyle.Render(footerText)
+			}
+
+			// Normal comments view (no boundary)
 			return footerStyle.Render("↑↓: scroll comments  •  h/l: switch posts  •  w: open URL  •  Esc: close comments  •  Ctrl+F: search  •  t: toggle sort  •  q: quit")
 		}
 		return footerStyle.Render("↑↓: scroll details  •  h/l: switch posts  •  w: open URL  •  Esc/Tab: back to list  •  c: view comments  •  t: toggle sort  •  q: quit")
