@@ -86,17 +86,31 @@ type AppConfig struct {
 var appConfig AppConfig
 
 func loadConfig() error {
-	// Try to load from config.json in parent directory
-	configPath := "../../config.json"
-	data, err := os.ReadFile(configPath)
+	// Try multiple paths for config.json
+	configPaths := []string{
+		"../../config.json",      // From apps/tui directory
+		"./config.json",          // From project root
+		"/home/edve/2/redditiew/config.json", // Full path fallback
+	}
+	
+	var data []byte
+	var err error
+	
+	for _, path := range configPaths {
+		data, err = os.ReadFile(path)
+		if err == nil {
+			break
+		}
+	}
+	
 	if err != nil {
-		// If not found, use defaults
+		// If not found in any location, use defaults with port 8765
 		appConfig = AppConfig{}
 		appConfig.TUI.DefaultSubreddit = "sysadmin"
 		appConfig.TUI.PostsPerPage = 50
 		appConfig.TUI.ListHeight = 10
 		appConfig.TUI.MaxTitleLength = 80
-		appConfig.API.BaseURL = "http://localhost:3002/api"
+		appConfig.API.BaseURL = "http://localhost:8765/api" // Updated to port 8765
 		appConfig.API.TimeoutSeconds = 10
 		return nil
 	}
@@ -126,7 +140,7 @@ func loadConfig() error {
 		appConfig.TUI.SubredditShortcuts = make(map[string]string)
 	}
 	if appConfig.API.BaseURL == "" {
-		appConfig.API.BaseURL = "http://localhost:3002/api"
+		appConfig.API.BaseURL = "http://localhost:8765/api" // Updated to port 8765
 	}
 	if appConfig.API.TimeoutSeconds == 0 {
 		appConfig.API.TimeoutSeconds = 10
