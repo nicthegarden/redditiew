@@ -1,5 +1,5 @@
 [Unit]
-Description=RedditView Web Interface Only
+Description=RedditView Web Interface
 Documentation=https://github.com/nicthegarden/redditiew
 After=network.target
 
@@ -7,22 +7,19 @@ After=network.target
 Type=simple
 User=__USERNAME__
 WorkingDirectory=__INSTALL_PATH__
-ExecStart=__NODE_BIN__ api-server.js
+
+# Run Vite development server on port 5174
+ExecStart=__NODE_BIN__ ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 5174
 
 # Environment variables
 Environment="NODE_ENV=production"
-Environment="PORT=3002"
-Environment="WEB_ONLY=true"
+Environment="VITE_API_BASE_URL=http://localhost:8765/api"
 
 # Auto-restart on failure
 Restart=on-failure
 RestartSec=10
 StartLimitInterval=60
 StartLimitBurst=3
-
-# Security hardening
-NoNewPrivileges=true
-PrivateTmp=true
 
 # Logging
 StandardOutput=journal

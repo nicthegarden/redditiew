@@ -20,7 +20,7 @@ import (
 
 // ============= Constants =============
 
-const apiBaseURL = "http://localhost:3002/api"
+const apiBaseURL = "http://localhost:8765/api"
 
 var (
 	// Colors

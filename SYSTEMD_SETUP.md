@@ -18,7 +18,31 @@ Run RedditView as a systemd service with automatic startup and management capabi
 
 ## 🎯 Overview
 
-RedditView can be installed as systemd services with two different installation scopes and three service modes:
+RedditView can be installed as systemd services with two different installation scopes and three service modes.
+
+### ⚡ New: Automated Setup Script
+
+A new automated setup script (`setup-systemctl.sh`) simplifies the installation process:
+
+```bash
+# Quick install with everything enabled and started
+./setup-systemctl.sh --scope user --mode both --enable --start
+
+# For system-wide installation
+sudo ./setup-systemctl.sh --scope system --mode both --enable --start
+
+# For help and all options
+./setup-systemctl.sh --help
+```
+
+The script handles all configuration automatically:
+- ✅ Creates service files
+- ✅ Configures correct paths and ports
+- ✅ Sets up tmux for TUI
+- ✅ Enables/starts services
+- ✅ Verifies installation
+
+**See [Quick Start](#quick-start) section below for detailed usage.**
 
 ### Installation Scopes
 
@@ -120,44 +144,57 @@ sudo journalctl -u redditview-api -f
 
 ## 🚀 Quick Start
 
-### Option 1: User-Level (Recommended for Personal Use)
+### Automated Setup (Recommended)
+
+Use the new `setup-systemctl.sh` script for automatic installation:
 
 ```bash
-cd /path/to/redditiew-local
+cd /path/to/redditiew
 
-# Interactive setup
-./setup.sh
+# Option 1: User-Level (No sudo required - Recommended for Personal Use)
+./setup-systemctl.sh --scope user --mode both --enable --start
 
-# Or automated
-./setup.sh --scope user --mode both --enable --start
+# Option 2: System-Level (Requires sudo - Recommended for Servers)
+sudo ./setup-systemctl.sh --scope system --mode both --user redditview --enable --start
+
+# Option 3: API-Only Mode (Headless servers)
+./setup-systemctl.sh --scope user --mode api-only --enable --start
+
+# Option 4: Custom Installation Path
+./setup-systemctl.sh --scope user --path /opt/redditiew --mode both --enable --start
 ```
 
-### Option 2: System-Level (Recommended for Servers)
+### What Gets Installed
+
+**User-Level Installation:**
+- Location: `~/.config/systemd/user/`
+- Services: `redditview-api.service` and `redditview-tui.service`
+- No root required
+- Services run as current user
+
+**System-Level Installation:**
+- Location: `/etc/systemd/system/`
+- Services: Same as user-level but system-wide
+- Requires sudo
+- Services run as specified user (e.g., `redditview`)
+- Starts automatically on system boot
+
+### Quick Test
+
+After setup, verify services are working:
 
 ```bash
-cd /path/to/redditiew-local
+# Check API service status
+systemctl --user status redditview-api
 
-# Interactive setup (with sudo)
-sudo ./setup.sh
+# Access Web UI
+# Open browser to: http://localhost:5174
 
-# Or automated (with sudo)
-sudo ./setup.sh --scope system --mode both --user redditview --enable
-```
+# Attach to TUI (if using 'both' mode)
+tmux attach-session -t redditview
 
-### Option 3: Custom Configuration
-
-```bash
-# User-level with custom path
-./setup.sh --scope user --path /opt/redditiew --enable --start
-
-# System-level with custom user
-sudo ./setup.sh --scope system --path /opt/redditiew --user reddit-service --enable
-
-# API-only system service
-sudo ./setup.sh --scope system --mode api-only --user redditview --enable
-
-# Verbose output for debugging
-./setup.sh --scope user --verbose
+# View service logs
+journalctl --user -u redditview-api -f
 ```
 
 

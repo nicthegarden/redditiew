@@ -44,7 +44,7 @@ cleanup() {
     echo -e "${YELLOW}Shutting down...${NC}"
     pkill -P $$ 2>/dev/null || true
     # Also kill any processes using our ports
-    lsof -ti:3002 2>/dev/null | xargs kill -9 2>/dev/null || true
+    lsof -ti:8765 2>/dev/null | xargs kill -9 2>/dev/null || true
     lsof -ti:5173 2>/dev/null | xargs kill -9 2>/dev/null || true
     wait 2>/dev/null || true
 }
@@ -62,13 +62,13 @@ kill_port() {
 
 # Start API Server
 if [ "$LAUNCH_API" = true ]; then
-    echo -e "${GREEN}▶ Starting API Server (port 3002)${NC}"
-    kill_port 3002
+    echo -e "${GREEN}▶ Starting API Server (port 8765)${NC}"
+    kill_port 8765
     node api-server.js &
     sleep 2
     
     # Verify API is running
-    if curl -s http://localhost:3002/health > /dev/null 2>&1; then
+    if curl -s http://localhost:8765/health > /dev/null 2>&1; then
         echo -e "${GREEN}✓ API Server running${NC}"
     else
         echo -e "${YELLOW}⚠ API Server may not be responding yet${NC}"

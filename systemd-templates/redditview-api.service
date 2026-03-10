@@ -2,7 +2,6 @@
 Description=RedditView API Server
 Documentation=https://github.com/nicthegarden/redditiew
 After=network.target
-Wants=redditview-api.socket
 
 [Service]
 Type=simple
@@ -12,7 +11,7 @@ ExecStart=__NODE_BIN__ api-server.js
 
 # Environment variables
 Environment="NODE_ENV=production"
-Environment="PORT=3002"
+Environment="PORT=8765"
 
 # Auto-restart on failure
 Restart=on-failure

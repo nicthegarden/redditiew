@@ -3,7 +3,7 @@
  * Exposes @redditview/core functionality via HTTP
  * Used by both React (through proxy) and Go TUI (direct calls)
  * 
- * Port: 3002
+ * Port: 8765
  */
 
 import http from 'http'
@@ -11,12 +11,13 @@ import url from 'url'
 import https from 'https'
 import fs from 'fs'
 import path from 'path'
+import os from 'os'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const cache = new Map()
 const CACHE_TTL = 60000 // 1 minute
-const API_PORT = 3002
+const API_PORT = 8765
 
 // Load config once at startup
 let appConfig = {}
@@ -251,21 +252,36 @@ server.on('error', (err) => {
   }
 })
 
-server.listen(API_PORT, () => {
+server.listen(API_PORT, '0.0.0.0', () => {
+  // Get local IP address for external access info
+  const interfaces = os.networkInterfaces()
+  let localIp = 'localhost'
+  
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      // Skip internal and non-IPv4 addresses
+      if (iface.family === 'IPv4' && !iface.internal) {
+        localIp = iface.address
+        break
+      }
+    }
+  }
+  
   console.log(`
-╭──────────────────────────────────────────────────╮
-│  RedditView API Server                           │
-│  http://localhost:${API_PORT}                         │
-├──────────────────────────────────────────────────┤
-│  Endpoints:                                      │
-│  GET /api/r/:subreddit                           │
-│  GET /api/r/:subreddit/:sort (hot/new/top...)    │
-│  GET /api/r/:subreddit/comments/:id              │
-│  GET /api/search.json?q=:query                   │
-│  GET /api/config                                 │
-│  GET /health                                     │
-│  GET /api/stats                                  │
-╰──────────────────────────────────────────────────╯
+╭────────────────────────────────────────────────────────╮
+│  RedditView API Server                                 │
+│  Local:    http://localhost:${API_PORT}                        │
+│  External: http://${localIp}:${API_PORT}                      │
+├────────────────────────────────────────────────────────┤
+│  Endpoints:                                            │
+│  GET /api/r/:subreddit                                 │
+│  GET /api/r/:subreddit/:sort (hot/new/top...)          │
+│  GET /api/r/:subreddit/comments/:id                    │
+│  GET /api/search.json?q=:query                         │
+│  GET /api/config                                       │
+│  GET /health                                           │
+│  GET /api/stats                                        │
+╰────────────────────────────────────────────────────────╯
   `)
 })
 
