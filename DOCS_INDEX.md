@@ -32,11 +32,19 @@ Welcome to RedditView documentation! This comprehensive guide covers everything 
   - Build from source
 
 - **[SYSTEMD_SETUP.md](SYSTEMD_SETUP.md)** - Systemd service management
-  - Auto-start on boot with systemd
-  - Multiple deployment modes (API+TUI, API-only, Web-only)
-  - Service installation with setup.sh
-  - tmux integration for persistent TUI sessions
-  - Service logs and monitoring
+   - Auto-start on boot with systemd
+   - Multiple deployment modes (API+TUI, API-only, Web-only)
+   - Service installation with setup.sh
+   - tmux integration for persistent TUI sessions
+   - Service logs and monitoring
+   
+- **[SYSTEMD_SYSTEM_LEVEL_GUIDE.md](SYSTEMD_SYSTEM_LEVEL_GUIDE.md)** - Production system-level deployment
+   - System-level service installation (/etc/systemd/system/)
+   - Security considerations and hardening
+   - Boot startup configuration
+   - Multi-instance setup
+   - Advanced monitoring and integration
+   - Troubleshooting guide for system deployments
 
 ### 2. Configuration & Customization
 - **[CONFIGURATION.md](CONFIGURATION.md)** - Customize your setup
@@ -121,8 +129,11 @@ Shows the web interface with:
 **...install and run it quickly**
 → [QUICKSTART.md](QUICKSTART.md)
 
-**...run it as a systemd service with auto-start on boot**
+**...run it as a systemd service with auto-start on boot (user-level)**
 → [SYSTEMD_SETUP.md](SYSTEMD_SETUP.md)
+
+**...deploy to production with system-level services**
+→ [SYSTEMD_SYSTEM_LEVEL_GUIDE.md](SYSTEMD_SYSTEM_LEVEL_GUIDE.md)
 
 **...understand all keyboard shortcuts**
 → [TUI_KEYBINDINGS.md](TUI_KEYBINDINGS.md)
@@ -156,7 +167,8 @@ Shows the web interface with:
 | [CONFIGURATION.md](CONFIGURATION.md) | Config reference | 15 min read | Intermediate |
 | [TUI_KEYBINDINGS.md](TUI_KEYBINDINGS.md) | Keyboard shortcuts | 10 min read | Beginner |
 | [INSTALLATION.md](INSTALLATION.md) | Technical setup | 20 min read | Advanced |
-| [SYSTEMD_SETUP.md](SYSTEMD_SETUP.md) | Service management | 15 min read | Intermediate |
+| [SYSTEMD_SETUP.md](SYSTEMD_SETUP.md) | Service management (user-level) | 15 min read | Intermediate |
+| [SYSTEMD_SYSTEM_LEVEL_GUIDE.md](SYSTEMD_SYSTEM_LEVEL_GUIDE.md) | Production deployment | 20 min read | Advanced |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Technical design | 15 min read | Advanced |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Contributing guide | 10 min read | Advanced |
 
@@ -180,9 +192,10 @@ Shows the web interface with:
 
 ### For Operators/DevOps
 1. [INSTALLATION.md](INSTALLATION.md) - Deployment options
-2. [CONFIGURATION.md](CONFIGURATION.md) - Environment variables
-3. [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
-4. Production deployment section in [INSTALLATION.md](INSTALLATION.md)
+2. [SYSTEMD_SETUP.md](SYSTEMD_SETUP.md) - User-level services
+3. [SYSTEMD_SYSTEM_LEVEL_GUIDE.md](SYSTEMD_SYSTEM_LEVEL_GUIDE.md) - Production deployment
+4. [CONFIGURATION.md](CONFIGURATION.md) - Environment variables
+5. [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
 
 ---
 
@@ -358,6 +371,8 @@ Create GitHub issue with:
 
 ### Technical
 - [INSTALLATION.md](INSTALLATION.md) - Detailed installation guide
+- [SYSTEMD_SETUP.md](SYSTEMD_SETUP.md) - User-level systemd services
+- [SYSTEMD_SYSTEM_LEVEL_GUIDE.md](SYSTEMD_SYSTEM_LEVEL_GUIDE.md) - Production deployment
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Development guide
 
@@ -400,19 +415,21 @@ Create GitHub issue with:
 
 ```
 RedditView Documentation/
-├── README.md                    ← Start here: Project overview
-├── QUICKSTART.md               ← Fast setup (5 min)
-├── INSTALLATION.md             ← Detailed installation
-├── CONFIGURATION.md            ← All configuration options
-├── TUI_KEYBINDINGS.md         ← Keyboard shortcut reference
-├── ARCHITECTURE.md             ← Technical architecture
-├── DEVELOPMENT.md              ← Contributing guide
-├── DOCS_INDEX.md              ← You are here!
-├── config.json                ← Configuration file
+├── README.md                             ← Start here: Project overview
+├── QUICKSTART.md                         ← Fast setup (5 min)
+├── INSTALLATION.md                       ← Detailed installation
+├── CONFIGURATION.md                      ← All configuration options
+├── TUI_KEYBINDINGS.md                   ← Keyboard shortcut reference
+├── SYSTEMD_SETUP.md                     ← User-level systemd services
+├── SYSTEMD_SYSTEM_LEVEL_GUIDE.md        ← Production deployment guide
+├── ARCHITECTURE.md                       ← Technical architecture
+├── DEVELOPMENT.md                        ← Contributing guide
+├── DOCS_INDEX.md                        ← You are here!
+├── config.json                          ← Configuration file
 └── Screenshots/
-    ├── TUI.png                ← TUI interface screenshot
-    ├── TUI-Comment.png        ← Comments view screenshot
-    └── WebUI.png              ← Web interface screenshot
+    ├── TUI.png                          ← TUI interface screenshot
+    ├── TUI-Comment.png                  ← Comments view screenshot
+    └── WebUI.png                        ← Web interface screenshot
 ```
 
 ---
