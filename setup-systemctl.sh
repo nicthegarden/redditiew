@@ -411,9 +411,17 @@ Type=simple
 User=$SERVICE_USER
 WorkingDirectory=$INSTALL_PATH
 
-# Tmux session setup - creates a new session and runs TUI inside it
-ExecStartPre=$TMUX_BIN new-session -d -s redditview -x 120 -y 40
-ExecStart=$TMUX_BIN send-keys -t redditview:0 "cd $INSTALL_PATH && $TUI_BIN" Enter
+# Phase 1: Create tmux session (idempotent - won't fail if exists)
+ExecStartPre=/usr/bin/bash -c '$TMUX_BIN new-session -d -s redditview -x 120 -y 40 || true'
+
+# Phase 2: Wait for session to exist and be ready (up to 3 seconds)
+ExecStartPre=/usr/bin/bash -c 'for i in {1..30}; do $TMUX_BIN has-session -t redditview 2>/dev/null && break; sleep 0.1; done'
+
+# Phase 3: Send command to session to start TUI
+ExecStartPre=$TMUX_BIN send-keys -t redditview:0 'cd $INSTALL_PATH && $TUI_BIN' Enter
+
+# Phase 4: Keep service running (monitor session existence)
+ExecStart=/usr/bin/bash -c 'while $TMUX_BIN has-session -t redditview 2>/dev/null; do sleep 10; done'
 
 # Auto-restart on failure
 Restart=on-failure
@@ -431,8 +439,8 @@ KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=10
 
-# Stop script to clean up tmux session
-ExecStopPost=/bin/bash -c "$TMUX_BIN kill-session -t redditview || true"
+# Clean up tmux session on stop
+ExecStopPost=/usr/bin/bash -c '$TMUX_BIN kill-session -t redditview 2>/dev/null || true'
 
 [Install]
 WantedBy=default.target

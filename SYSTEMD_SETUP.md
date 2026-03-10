@@ -851,18 +851,61 @@ systemctl --user stop redditview-tui
 ./apps/tui/redditview
 ```
 
-### Tmux Session Already Exists
+### Tmux Session Issues
 
-**When TUI service fails to start:**
+**Understanding the Robust Startup Strategy**
+
+The TUI service uses a 4-phase startup process to ensure reliable tmux session management:
+
+**Phase 1:** Create tmux session (idempotent, won't fail if exists)
+**Phase 2:** Wait for session to be ready (up to 3 seconds)
+**Phase 3:** Send TUI command to session
+**Phase 4:** Keep service running by monitoring session existence
+
+**When TUI session doesn't exist:**
 ```bash
 # Check for existing session
 tmux list-sessions
 
-# Kill the orphaned session
-tmux kill-session -t redditview
+# If redditview session exists, verify it's working
+tmux has-session -t redditview && echo "Session is healthy" || echo "Session dead"
 
-# Restart service
+# Restart service to recreate session
 systemctl --user restart redditview-tui
+
+# Verify new session created
+tmux list-sessions | grep redditview
+```
+
+**When TUI process is running but not in tmux:**
+```bash
+# This shouldn't happen with the robust setup, but if it does:
+# Kill the orphaned process
+pkill -f "apps/tui/redditview"
+
+# Kill any zombie tmux processes
+pkill -f "tmux new-session"
+
+# Kill the tmux session completely
+tmux kill-session -t redditview 2>/dev/null || true
+
+# Restart service (Phase 1-4 will run)
+systemctl --user restart redditview-tui
+
+# Verify TUI is in tmux
+ps -ef | grep redditview | grep -v grep
+# Parent process should be tmux, not bash
+```
+
+**Attaching to the TUI session:**
+```bash
+# Attach to running TUI
+tmux attach-session -t redditview
+
+# Detach without stopping it (Ctrl+B then D)
+# Or programmatically:
+tmux send-keys -t redditview:0 C-b
+tmux send-keys -t redditview:0 D
 ```
 
 ### Permission Denied Errors

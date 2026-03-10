@@ -628,6 +628,65 @@ sudo systemctl start redditview-tui
 tmux attach-session -t redditview
 ```
 
+#### Tmux Session Issues (TUI Service)
+
+**The Robust 4-Phase Startup Strategy**
+
+The TUI service uses a resilient approach to tmux session management:
+- **Phase 1:** Create session (idempotent, won't fail if exists)
+- **Phase 2:** Wait for session readiness (up to 3 seconds)
+- **Phase 3:** Send TUI command to session
+- **Phase 4:** Monitor session and keep service running
+
+**Tmux session doesn't exist:**
+```bash
+# Check for existing session
+sudo tmux list-sessions -t redditview 2>/dev/null || echo "No session found"
+
+# Verify the service created it
+sudo systemctl status redditview-tui
+
+# Check if Phase 1-4 completed successfully
+sudo journalctl -u redditview-tui -n 30 --no-pager
+
+# Manually restart to trigger Phase 1-4
+sudo systemctl restart redditview-tui
+
+# Verify session now exists
+sudo tmux list-sessions | grep redditview
+```
+
+**TUI process exists but not in tmux:**
+```bash
+# Kill orphaned processes
+sudo pkill -f "apps/tui/redditview"
+sudo pkill -f "tmux new-session"
+
+# Kill the session
+sudo tmux kill-session -t redditview 2>/dev/null || true
+
+# Restart service (triggers Phase 1-4 again)
+sudo systemctl restart redditview-tui
+
+# Verify TUI is now in tmux
+ps -ef | grep redditview | grep -v grep
+# Parent process should be tmux, not bash
+```
+
+**Accessing the TUI in tmux:**
+```bash
+# Attach to the TUI session
+sudo tmux attach-session -t redditview
+
+# Detach without stopping (Ctrl+B then D from inside tmux)
+# Or by sending keys:
+sudo tmux send-keys -t redditview C-b
+sudo tmux send-keys -t redditview D
+
+# Service continues running in background
+sudo systemctl status redditview-tui
+```
+
 #### Service Keeps Restarting
 
 **Check restart limits:**
