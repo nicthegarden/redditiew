@@ -270,8 +270,8 @@ sudo ./setup.sh --scope system --mode api-only --user redditview
 
 **Access:**
 ```bash
-# API on http://localhost:3002
-# Web UI on http://localhost:3000
+# API on http://localhost:8765
+# Web UI on http://localhost:5173
 
 # View logs (user-level)
 journalctl --user -u redditview-api -f
@@ -311,7 +311,7 @@ sudo ./setup.sh --scope system --mode web-only --user redditview
 
 **Access:**
 ```bash
-# Web UI on http://localhost:3000
+# Web UI on http://localhost:5173
 
 # View logs (user-level)
 journalctl --user -u redditview-web -f
@@ -384,8 +384,8 @@ journalctl --user -u redditview-tui -f
 
 **Access:**
 ```bash
-# API on http://localhost:3002
-# Web UI on http://localhost:3000
+# API on http://localhost:8765
+# Web UI on http://localhost:5173
 
 # View logs
 journalctl --user -u redditview-api -f
@@ -417,7 +417,7 @@ journalctl --user -u redditview-api -f
 
 **Access:**
 ```bash
-# Web UI on http://localhost:3000
+# Web UI on http://localhost:5173
 
 # View logs
 journalctl --user -u redditview-web -f
@@ -775,7 +775,7 @@ ps aux | grep redditview
 top -p $(pgrep -f redditview-api),$(pgrep -f "tmux.*redditview")
 
 # Check open ports
-netstat -tlnp | grep -E "3000|3002"
+netstat -tlnp | grep -E "3000|8765"
 ```
 
 ---
@@ -794,8 +794,8 @@ journalctl --user -u redditview-api --no-pager
 
 1. **Port already in use:**
    ```bash
-   # Check what's using port 3002
-   lsof -i :3002
+   # Check what's using port 8765
+   lsof -i :8765
    
    # Stop the existing process
    kill -9 <PID>
@@ -831,7 +831,7 @@ journalctl --user -u redditview-api --no-pager
 systemctl --user status redditview-api
 
 # Test API endpoint
-curl http://localhost:3002/api/r/sysadmin.json
+curl http://localhost:8765/api/r/sysadmin.json
 ```
 
 **Check TUI logs:**
@@ -1032,7 +1032,7 @@ FROM node:18-alpine
 WORKDIR /redditiew
 COPY . .
 RUN npm install
-EXPOSE 3000 3002
+EXPOSE 5173 8765
 CMD ["npm", "start"]
 ```
 
@@ -1049,8 +1049,8 @@ User=redditview
 WorkingDirectory=/path/to/redditiew
 ExecStart=/usr/bin/docker run --rm \
   --name redditview \
-  -p 3000:3000 \
-  -p 3002:3002 \
+  -p 5173:5173 \
+  -p 8765:8765 \
   -v /path/to/redditiew:/redditiew \
   redditview:latest
 
@@ -1157,8 +1157,8 @@ rm -rf /path/to/redditiew-local
 
 | Component | Port | Type |
 |-----------|------|------|
-| API Server | 3002 | REST API |
-| Web UI | 3000 | HTTP |
+| API Server | 8765 | REST API |
+| Web UI | 5173 | HTTP |
 | Tmux | N/A | Socket |
 
 ### Useful Systemctl Commands

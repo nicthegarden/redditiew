@@ -3,7 +3,7 @@
  * Exposes @redditview/core functionality via HTTP
  * Used by both React (through proxy) and Go TUI (direct calls)
  * 
- * Port: 3002
+ * Port: 8765
  */
 
 import http from 'http'
@@ -17,7 +17,7 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>()
 const CACHE_TTL = 60000 // 1 minute
-const API_PORT = 3002
+const API_PORT = 8765
 
 function getCache(key: string): string | null {
   const entry = cache.get(key)

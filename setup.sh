@@ -743,7 +743,7 @@ ${BLUE}Common Commands:${NC}
     cat $SERVICE_DIR/redditview-tui.service
 
 ${BLUE}Web Access:${NC}
-  Open http://localhost:3000 in your browser
+  Open http://localhost:5173 in your browser
 
 ${BLUE}Documentation:${NC}
   See SYSTEMD_SETUP.md for detailed information
@@ -772,7 +772,7 @@ ${BLUE}To manage your service:${NC}
     $systemctl_cmd restart redditview-api
 
 ${BLUE}Web Access:${NC}
-  Open http://localhost:3000 in your browser
+  Open http://localhost:5173 in your browser
 
 ${BLUE}Documentation:${NC}
   See SYSTEMD_SETUP.md for detailed information
@@ -801,7 +801,7 @@ ${BLUE}To manage your service:${NC}
     $systemctl_cmd restart redditview-web
 
 ${BLUE}Web Access:${NC}
-  Open http://localhost:3000 in your browser
+  Open http://localhost:5173 in your browser
 
 ${BLUE}Documentation:${NC}
   See SYSTEMD_SETUP.md for detailed information

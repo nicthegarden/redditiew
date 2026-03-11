@@ -243,8 +243,8 @@ RedditView's proxy server design is specifically optimized for:
 │                          ↓                                       │
 │  Step 2: Client Makes Request                                   │
 │  ┌──────────────────────────────────────────────────────┐       │
-│  │ TUI:    GET http://localhost:3002/api/r/golang.json │       │
-│  │ WEB:    GET http://localhost:3002/api/r/golang.json │       │
+│  │ TUI:    GET http://localhost:8765/api/r/golang.json │       │
+│  │ WEB:    GET http://localhost:8765/api/r/golang.json │       │
 │  │ (Both use same endpoint)                             │       │
 │  └──────────────────────────────────────────────────────┘       │
 │                          ↓                                       │
@@ -335,7 +335,7 @@ RedditView's proxy server design is specifically optimized for:
 ```
 User navigates menu
         ↓
-Go TUI calls: http.Get("http://localhost:3002/api/r/golang.json")
+Go TUI calls: http.Get("http://localhost:8765/api/r/golang.json")
         ↓
 API Server (api-server.js) receives request
         ↓
@@ -360,7 +360,7 @@ Checks cache:
 ```
 User clicks on subreddit in React app
         ↓
-React calls: fetch('http://localhost:3002/api/r/golang.json')
+React calls: fetch('http://localhost:8765/api/r/golang.json')
         ↓
 API Server (api-server.js) receives request
         ↓
@@ -386,7 +386,7 @@ Checks cache:
 **Example 1: First Request to r/golang (Cache Miss)**
 ```bash
 # Client Request
-GET http://localhost:3002/api/r/golang.json
+GET http://localhost:8765/api/r/golang.json
 
 # Server logs:
 [12:34:56] GET /api/r/golang.json - Cache MISS
@@ -400,7 +400,7 @@ GET http://localhost:3002/api/r/golang.json
 **Example 2: Second Request to r/golang (Cache Hit)**
 ```bash
 # Client Request (5 seconds later)
-GET http://localhost:3002/api/r/golang.json
+GET http://localhost:8765/api/r/golang.json
 
 # Server logs:
 [12:35:01] GET /api/r/golang.json - Cache HIT (25s remaining)
@@ -412,7 +412,7 @@ GET http://localhost:3002/api/r/golang.json
 **Example 3: Request to Different Subreddit (Cache Miss)**
 ```bash
 # Client Request
-GET http://localhost:3002/api/r/sysadmin.json
+GET http://localhost:8765/api/r/sysadmin.json
 
 # Server logs:
 [12:35:02] GET /api/r/sysadmin.json - Cache MISS (different subreddit)
@@ -497,7 +497,7 @@ Time:     Request              Rate Limit Usage    Reddit Response
 │ │ └──────────┘  └──────────┘  └──────────────────────┘  │   │
 │ │                                                         │   │
 │ │ Setup: npm install && npm run build                   │   │
-│ │ Usage: ./redditview (TUI) or localhost:3000 (Web)     │   │
+│ │ Usage: ./redditview (TUI) or localhost:5173 (Web)     │   │
 │ └────────────────────────────────────────────────────────┘   │
 │                                                                │
 │ Option 2: SYSTEMD SERVICE (Linux)                            │
@@ -535,7 +535,7 @@ Time:     Request              Rate Limit Usage    Reddit Response
 │  └──────┬───────┘            └──────┬───────┘                │
 │         │                           │                        │
 │         │ HTTP Requests             │ HTTP Requests          │
-│         │ (localhost:3002)          │ (localhost:3002)       │
+│         │ (localhost:8765)          │ (localhost:8765)       │
 │         │                           │                        │
 │         └───────────────┬───────────┘                        │
 │                         │                                    │
@@ -581,7 +581,7 @@ Time:     Request              Rate Limit Usage    Reddit Response
 │ ┌──────────────────────────────────────────────────────────┐   │
 │ │ You:       Press 's', type "golang", press Enter        │   │
 │ │            ↓                                              │   │
-│ │ TUI:       http.Get("localhost:3002/api/r/golang.json") │   │
+│ │ TUI:       http.Get("localhost:8765/api/r/golang.json") │   │
 │ │            ↓                                              │   │
 │ │ Proxy:     [Check cache] → Cache MISS                   │   │
 │ │            ↓                                              │   │
@@ -600,7 +600,7 @@ Time:     Request              Rate Limit Usage    Reddit Response
 │ ┌──────────────────────────────────────────────────────────┐   │
 │ │ You:       Press 'r' to refresh                          │   │
 │ │            ↓                                              │   │
-│ │ TUI:       http.Get("localhost:3002/api/r/golang.json") │   │
+│ │ TUI:       http.Get("localhost:8765/api/r/golang.json") │   │
 │ │            ↓                                              │   │
 │ │ Proxy:     [Check cache] → Cache HIT (25s remaining)    │   │
 │ │            ↓                                              │   │

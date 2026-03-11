@@ -247,7 +247,7 @@ Shows the web interface with:
     "theme": "dark"
   },
   "api": {
-    "base_url": "http://localhost:3002/api",
+    "base_url": "http://localhost:8765/api",
     "timeout_seconds": 10
   }
 }
@@ -263,7 +263,7 @@ Shows the web interface with:
 |---------|------------|----------|
 | "command not found: go" | Go not installed | [INSTALLATION.md](INSTALLATION.md) Step 1 |
 | "Cannot connect to API" | API server not running | Run `npm start` |
-| TUI won't start | API not responding | Check `curl http://localhost:3002/api/r/sysadmin.json` |
+| TUI won't start | API not responding | Check `curl http://localhost:8765/api/r/sysadmin` |
 | Keys not working | Terminal size too small | Resize to minimum 80×24 |
 | Posts won't load | Network/API issue | Check internet connection, API logs |
 | Comments not showing | API issue | Refresh with F5, check API logs |

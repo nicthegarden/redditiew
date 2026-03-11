@@ -483,7 +483,7 @@ GODEBUG=gctrace=1 ./redditview
 NODE_ENV=development npm start
 
 # Check what requests are made
-curl -v http://localhost:3002/api/r/sysadmin.json
+curl -v http://localhost:8765/api/r/sysadmin.json
 ```
 
 ---

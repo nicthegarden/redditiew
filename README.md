@@ -35,9 +35,9 @@ A modern, feature-rich Reddit client available in both Terminal User Interface (
 - **Sort Toggle** - Switch between hot and new posts
 - **Keyboard Shortcuts** - Quick access to favorite subreddits (1-9)
 
-## 🏗️ Why This Architecture? (Proxy Server Design)
+## 🏗️ Architecture
 
-RedditView uses a **local proxy server architecture** instead of direct Reddit API access. Here's why this design is perfect for your niche needs:
+RedditView uses a **local proxy server architecture** instead of direct Reddit API access.
 
 ### The Problem with Direct Reddit API Access
 - ❌ Reddit's OAuth2 requires user authentication credentials
@@ -63,7 +63,7 @@ RedditView solves this by running a **lightweight proxy server** that:
 │                                                                   │
 │  ┌──────────────┐              ┌─────────────────────────────┐  │
 │  │   TUI App    │              │    Web Browser/UI           │  │
-│  │  (Go Binary) │              │  (Node.js/React Frontend)   │  │
+│  │  (Go Binary) │              │  (React/Vite Frontend)      │  │
 │  │              │              │                             │  │
 │  │  • Terminal  │              │  • Modern responsive UI     │  │
 │  │  • Keyboard  │              │  • Mouse friendly           │  │
@@ -75,7 +75,7 @@ RedditView solves this by running a **lightweight proxy server** that:
 │                          ▼                                       │
 │         ┌────────────────────────────────┐                      │
 │         │   LOCAL PROXY SERVER (Node.js) │                      │
-│         │   Running on localhost:3002    │                      │
+│         │   Running on localhost:8765    │                      │
 │         │                                │                      │
 │         │  • Caches Reddit data          │                      │
 │         │  • Handles rate limiting       │                      │
@@ -95,51 +95,21 @@ RedditView solves this by running a **lightweight proxy server** that:
             └──────────────────┘
 ```
 
-### How It Works
-
-**1. Data Flow**
-```
-Terminal/Browser → Local Proxy → Reddit Public API → Local Proxy → Display
-```
-
-**2. Request Example**
-```
-You: "Show me posts from r/sysadmin"
-      ↓
-TUI/Web: GET http://localhost:3002/api/r/sysadmin.json
-      ↓
-Proxy Server:
-  - Checks if cached (serve instantly)
-  - If not cached, fetches from Reddit
-  - Caches result (next request is instant)
-  - Returns JSON to your app
-      ↓
-TUI/Web: Displays posts beautifully
-```
-
-**3. Why This Benefits You**
-- **Zero Configuration** - No API keys, no OAuth flow
-- **Lightning Fast** - Results cached locally
-- **Multiple Interfaces** - Same backend, different UIs
-- **Offline-ish** - Cached data available without internet
-- **Privacy Friendly** - No third-party tracking
-- **Self-Contained** - Everything runs locally
-
 ### Components
 
 | Component | Language | Purpose |
 |-----------|----------|---------|
 | **TUI Application** | Go | Terminal interface with Bubble Tea framework |
-| **Proxy Server** | Node.js/Express | Local API server, caching, rate limiting |
-| **Web UI** | Node.js/React | Browser-based interface (same backend) |
+| **Proxy Server** | Node.js (native http) | Local API server, caching, rate limiting |
+| **Web UI** | React/Vite | Browser-based interface (same backend) |
 
 ### Key Design Benefits
 
-✅ **Simplicity** - One local server, multiple clients
-✅ **Performance** - Built-in caching layer
-✅ **Flexibility** - Easy to add new interfaces (CLI, Web, Desktop, etc.)
-✅ **Reliability** - No network dependency for cached data
-✅ **Scalability** - Can serve multiple instances
+- **Zero Configuration** - No API keys, no OAuth flow
+- **Lightning Fast** - Results cached locally (1 minute TTL)
+- **Multiple Interfaces** - Same backend, different UIs
+- **Privacy Friendly** - No third-party tracking
+- **Self-Contained** - Everything runs locally
 
 ---
 
@@ -156,47 +126,40 @@ TUI/Web: Displays posts beautifully
 
 ## 🚀 Quick Start
 
-### For Linux Users
+### Prerequisites
+- **Go** 1.21+ (for TUI)
+- **Node.js** 18+ LTS
+- **npm** 7+
+
+### Installation
+
 ```bash
-# Install dependencies (choose one)
-# Ubuntu/Debian
-sudo apt-get install golang-go nodejs npm
-
-# Fedora/RHEL
-sudo dnf install golang nodejs npm
-
-# Install the application
+# Clone the repository
 git clone https://github.com/nicthegarden/redditiew.git
 cd redditiew
+
+# Install dependencies
 npm install
+
+# Build the TUI binary
 go build -o apps/tui/redditview ./apps/tui
+
+# Build the web UI
 npm run build
 
-# Start the server
+# Start the API server (port 8765)
 npm start
 
 # In another terminal, run the TUI
 ./apps/tui/redditview
 ```
 
-### For Windows Users
-```powershell
-# Install dependencies from:
-# - Go: https://golang.org/dl
-# - Node.js: https://nodejs.org
+### Web UI
+```bash
+# Start the development server (port 5173)
+npm run dev
 
-# Clone and setup
-git clone https://github.com/nicthegarden/redditiew.git
-cd redditiew
-npm install
-go build -o apps/tui/redditview.exe ./apps/tui
-npm run build
-
-# Start the server
-npm start
-
-# In another PowerShell window, run the TUI
-.\apps\tui\redditview.exe
+# Open http://localhost:5173 in your browser
 ```
 
 👉 **See [QUICKSTART.md](QUICKSTART.md) for detailed step-by-step instructions**
@@ -248,7 +211,7 @@ npm start
 | Key | Action |
 |-----|--------|
 | `t` | Toggle sort (Hot ↔ New) |
-| `F5` | Refresh posts (F5 or Ctrl+R after subreddit selection) |
+| `F5` | Refresh posts |
 
 #### Utility
 | Key | Action |
@@ -300,7 +263,7 @@ Create/edit `config.json` in the project root:
 {
   "tui": {
     "default_subreddit": "sysadmin",
-    "default_sort": "popular",
+    "default_sort": "hot",
     "posts_per_page": 200,
     "list_height": 10,
     "max_title_length": 80,
@@ -314,12 +277,12 @@ Create/edit `config.json` in the project root:
   },
   "web": {
     "default_subreddit": "sysadmin",
-    "default_sort": "popular",
+    "default_sort": "hot",
     "posts_per_page": 20,
     "theme": "dark"
   },
   "api": {
-    "base_url": "http://localhost:3002/api",
+    "base_url": "http://localhost:8765/api",
     "timeout_seconds": 10
   }
 }
@@ -329,7 +292,7 @@ Create/edit `config.json` in the project root:
 
 #### TUI Settings
 - **`default_subreddit`** - Subreddit to load on startup (default: "sysadmin")
-- **`default_sort`** - Default sort order: "popular" or "new" (default: "popular")
+- **`default_sort`** - Default sort order: "hot" or "new" (default: "hot")
 - **`posts_per_page`** - Number of posts to fetch (default: 200)
 - **`list_height`** - Height of post list in split view (default: 10)
 - **`max_title_length`** - Truncate titles longer than this (default: 80)
@@ -337,12 +300,12 @@ Create/edit `config.json` in the project root:
 
 #### Web Settings
 - **`default_subreddit`** - Subreddit to load in browser (default: "sysadmin")
-- **`default_sort`** - Default sort order: "popular" or "new" (default: "popular")
+- **`default_sort`** - Default sort order: "hot" or "new" (default: "hot")
 - **`posts_per_page`** - Posts displayed per page (default: 20)
 - **`theme`** - UI theme: "light" or "dark" (default: "dark")
 
 #### API Settings
-- **`base_url`** - API server URL (default: "http://localhost:3002/api")
+- **`base_url`** - API server URL (default: "http://localhost:8765/api")
 - **`timeout_seconds`** - HTTP request timeout (default: 10)
 
 👉 **See [CONFIGURATION.md](CONFIGURATION.md) for detailed configuration options**
@@ -353,71 +316,80 @@ Create/edit `config.json` in the project root:
 redditiew/
 ├── apps/
 │   ├── tui/                    # Terminal User Interface (Go)
-│   │   ├── main.go            # TUI application with full keybindings
-│   │   └── redditview         # Compiled binary
+│   │   ├── main.go             # TUI application with full keybindings
+│   │   └── redditview          # Compiled binary
 │   └── web/                   # Web interface (placeholder)
 ├── packages/
-│   ├── api/                   # API server implementation
-│   └── reddit-scraper/        # Reddit data scraper
-├── api-server.js              # Express API server with caching
-├── config.json                # Configuration file
-├── package.json               # Node.js dependencies
-├── README.md                  # This file
-├── QUICKSTART.md              # Quick start guide
-├── CONFIGURATION.md           # Configuration reference
-└── ARCHITECTURE.md            # Technical architecture
+│   ├── core/                   # Core shared logic
+│   │   ├── src/api/            # Reddit API client
+│   │   ├── src/cache/          # Caching utilities
+│   │   └── src/models/         # Data models
+│   └── web/                   # React web UI package
+├── src/                        # Web UI source (root workspace)
+├── api-server.ts               # Node.js API server (pure http module)
+├── proxy.ts                    # Vite proxy configuration
+├── vite.config.ts              # Vite bundler configuration
+├── config.json                 # Configuration file
+├── package.json                # Node.js dependencies
+├── launch.sh                   # Launch script
+└── setup.sh                    # Setup script
 ```
 
 ## 🔧 System Requirements
 
 ### Minimum Requirements
-- **Go** 1.19+ (for TUI)
-- **Node.js** 16+ (for API server)
+- **Go** 1.21+ (for TUI)
+- **Node.js** 18+ LTS
 - **npm** 7+
 - **Terminal** with 80x24 character minimum
 
 ### Recommended
-- **Go** 1.21+
-- **Node.js** 18+ LTS
+- **Go** 1.24+
+- **Node.js** 20+ LTS
 - **Terminal** with 120x40 character minimum for best experience
 - **Modern OS** (Windows 10+, Ubuntu 20.04+, macOS 10.15+)
 
 ## 🌐 API Reference
 
-The application uses a local REST API server running on `localhost:3002`.
+The application uses a local REST API server running on `localhost:8765`.
 
 ### Key Endpoints
 
 **Get Posts from Subreddit**
 ```
-GET /api/r/:subreddit.json?limit=200
-GET /api/r/:subreddit/:sort.json?limit=200
+GET /api/r/:subreddit
+GET /api/r/:subreddit/hot
+GET /api/r/:subreddit/new
 ```
 
 **Get Comments for Post**
 ```
-GET /api/r/:subreddit/comments/:postid
+GET /api/r/:subreddit/comments/:id
 ```
-
-**Get Configuration**
-```
-GET /api/config
-```
-Returns default sort and subreddit shortcuts configuration.
 
 **Search Posts**
 ```
-GET /api/search.json?q=query&type=link&limit=200
+GET /api/search.json?q=query&type=link&limit=50
 ```
 
-See the API server implementation in `api-server.js` for complete details.
+**Health Check**
+```
+GET /health
+```
+
+**Stats**
+```
+GET /api/stats
+```
+
+See the API server implementation in `api-server.ts` for complete details.
 
 ## 🐛 Troubleshooting
 
 ### TUI Won't Start
 ```bash
 # Check if API server is running
-curl http://localhost:3002/api/r/sysadmin.json
+curl http://localhost:8765/api/r/sysadmin
 
 # Rebuild the binary
 cd apps/tui && go build -o redditview .
@@ -439,45 +411,45 @@ go version
 - Check terminal window height (must be at least 24 lines)
 
 ### Sort Toggle Not Working
-- Ensure config.json has valid `default_sort` value ("popular" or "new")
+- Ensure config.json has valid `default_sort` value ("hot" or "new")
 - API server must be running
-- Check that `/api/config` endpoint is accessible
+- Check that `/health` endpoint is accessible
 
 ### Performance Issues
 - Increase terminal window size (minimum 80x24, recommended 120x40)
 - Reduce `posts_per_page` in config.json
 - Ensure system has at least 512MB RAM
-- Try closing other applications to free memory
 
 ### API Server Port Conflict
 ```bash
-# If port 3002 is in use, edit api-server.js to use different port
-# Or kill the existing process on port 3002
-lsof -i :3002  # macOS/Linux
-netstat -ano | findstr :3002  # Windows
+# If port 8765 is in use, kill the existing process
+lsof -i :8765  # macOS/Linux
+netstat -ano | findstr :8765  # Windows
 ```
 
 ## 📋 System Support
 
 | OS | Status | Notes |
-|----|---------| ------|
+|----|--------|-------|
 | Linux | ✅ Fully Supported | Tested on Ubuntu, Fedora, Arch |
 | Windows | ✅ Fully Supported | Windows 10 and newer |
 | macOS | ✅ Fully Supported | Intel and Apple Silicon |
 
 ## 🔗 Key Dependencies
 
-### Backend
+### Backend (TUI)
 - **Go** - TUI application language
 - **Bubble Tea** - TUI framework for elegant terminal UIs
 - **Lipgloss** - Terminal styling and rendering
-- **Node.js/Express** - API server
-- **Axios** - HTTP client
+
+### Backend (API Server)
+- **Node.js** - Runtime
+- **TypeScript** - Language
 
 ### Frontend (Web)
-- **React** - UI framework
-- **Tailwind CSS** - Styling
-- **Axios** - HTTP client
+- **React** 19 - UI framework
+- **Vite** - Build tool
+- **React Router** - Client-side routing
 
 ## 📝 Recent Changes
 
@@ -528,379 +500,3 @@ This project is licensed under the MIT License - see LICENSE file for details.
 ---
 
 **Happy browsing! 🚀**
-
-For more information, see the [complete documentation](#-documentation).
-
-
-## 🏗️ Why This Architecture? (Proxy Server Design)
-
-RedditView uses a **local proxy server architecture** instead of direct Reddit API access. Here's why this design is perfect for your niche needs:
-
-### The Problem with Direct Reddit API Access
-- ❌ Reddit's OAuth2 requires user authentication credentials
-- ❌ No "read-only" mode - can't safely embed credentials
-- ❌ Rate limiting per endpoint (60 requests/hour per user)
-- ❌ Complex authentication workflows in terminal
-- ❌ Browser dependencies for OAuth flow
-
-### The Solution: Local Proxy Server
-RedditView solves this by running a **lightweight proxy server** that:
-- ✅ Fetches Reddit data server-side (bypasses client-side auth)
-- ✅ Uses public endpoints (no credentials needed)
-- ✅ Centralizes rate limiting and caching
-- ✅ Works in terminal without browser
-- ✅ Feeds your niche needs: read content without full Reddit UI
-
-### System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        YOU (Your Computer)                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  ┌──────────────┐              ┌─────────────────────────────┐  │
-│  │   TUI App    │              │    Web Browser/UI           │  │
-│  │  (Go Binary) │              │  (Node.js/React Frontend)   │  │
-│  │              │              │                             │  │
-│  │  • Terminal  │              │  • Modern responsive UI     │  │
-│  │  • Keyboard  │              │  • Mouse friendly           │  │
-│  │  • Full TTY  │              │  • Same data backend        │  │
-│  └──────┬───────┘              └────────────┬────────────────┘  │
-│         │                                    │                   │
-│         └────────────────┬───────────────────┘                   │
-│                          │                                       │
-│                          ▼                                       │
-│         ┌────────────────────────────────┐                      │
-│         │   LOCAL PROXY SERVER (Node.js) │                      │
-│         │   Running on localhost:3002    │                      │
-│         │                                │                      │
-│         │  • Caches Reddit data          │                      │
-│         │  • Handles rate limiting       │                      │
-│         │  • Provides REST API           │                      │
-│         │  • No credentials needed       │                      │
-│         └───────────┬────────────────────┘                      │
-│                     │                                           │
-└─────────────────────┼───────────────────────────────────────────┘
-                      │
-                      │ (Your Internet Connection)
-                      │
-                      ▼
-            ┌──────────────────┐
-            │  reddit.com API  │
-            │  Public Endpoints│
-            │  (No Auth)       │
-            └──────────────────┘
-```
-
-### How It Works
-
-**1. Data Flow**
-```
-Terminal/Browser → Local Proxy → Reddit Public API → Local Proxy → Display
-```
-
-**2. Request Example**
-```
-You: "Show me posts from r/sysadmin"
-      ↓
-TUI/Web: GET http://localhost:3002/api/r/sysadmin.json
-      ↓
-Proxy Server:
-  - Checks if cached (serve instantly)
-  - If not cached, fetches from Reddit
-  - Caches result (next request is instant)
-  - Returns JSON to your app
-      ↓
-TUI/Web: Displays posts beautifully
-```
-
-**3. Why This Benefits You**
-- **Zero Configuration** - No API keys, no OAuth flow
-- **Lightning Fast** - Results cached locally
-- **Multiple Interfaces** - Same backend, different UIs
-- **Offline-ish** - Cached data available without internet
-- **Privacy Friendly** - No third-party tracking
-- **Self-Contained** - Everything runs locally
-
-### Components
-
-| Component | Language | Purpose |
-|-----------|----------|---------|
-| **TUI Application** | Go | Terminal interface with Bubble Tea framework |
-| **Proxy Server** | Node.js/Express | Local API server, caching, rate limiting |
-| **Web UI** | Node.js/React | Browser-based interface (same backend) |
-
-### Key Design Benefits
-
-✅ **Simplicity** - One local server, multiple clients
-✅ **Performance** - Built-in caching layer
-✅ **Flexibility** - Easy to add new interfaces (CLI, Web, Desktop, etc.)
-✅ **Reliability** - No network dependency for cached data
-✅ **Scalability** - Can serve multiple instances
-
----
-
-## 📸 Screenshots
-
-### TUI - Post List View
-![TUI Post List](TUI.png)
-
-### TUI - Comments View
-![TUI Comments](TUI-Comment.png)
-
-### Web UI
-![Web UI](WebUI.png)
-
-## 🚀 Quick Start
-
-### For Linux Users
-```bash
-# Install dependencies (choose one)
-# Ubuntu/Debian
-sudo apt-get install golang-go nodejs npm
-
-# Fedora/RHEL
-sudo dnf install golang nodejs npm
-
-# Install the application
-git clone https://github.com/yourusername/redditiew-local.git
-cd redditiew-local
-npm install
-go build -o apps/tui/redditview ./apps/tui
-npm run build
-
-# Start the server
-npm start
-
-# In another terminal, run the TUI
-./apps/tui/redditview
-```
-
-### For Windows Users
-```powershell
-# Install dependencies from:
-# - Go: https://golang.org/dl
-# - Node.js: https://nodejs.org
-
-# Clone and setup
-git clone https://github.com/yourusername/redditiew-local.git
-cd redditiew-local
-npm install
-go build -o apps/tui/redditview.exe ./apps/tui
-npm run build
-
-# Start the server
-npm start
-
-# In another PowerShell window, run the TUI
-.\apps\tui\redditview.exe
-```
-
-👉 **See [QUICKSTART.md](QUICKSTART.md) for detailed step-by-step instructions**
-
-## 📖 Documentation
-
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes (Windows & Linux)
-- **[INSTALLATION.md](INSTALLATION.md)** - Detailed installation and build instructions
-- **[SYSTEMD_SETUP.md](SYSTEMD_SETUP.md)** - Run as systemd service with auto-start
-- **[CONFIGURATION.md](CONFIGURATION.md)** - Configure the application to your preferences
-- **[TUI_KEYBINDINGS.md](TUI_KEYBINDINGS.md)** - Complete keyboard shortcut reference
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture and design decisions
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Contributing and development guide
-
-## 🎮 Basic Usage
-
-### Terminal UI (TUI)
-
-**Starting the Application**
-```bash
-# Ensure API server is running
-npm start
-
-# In another terminal
-./apps/tui/redditview
-```
-
-**Basic Navigation**
-| Action | Keys |
-|--------|------|
-| Browse posts | `j`/`k` or `↑`/`↓` |
-| View post details | `Enter` |
-| View comments | `c` |
-| Scroll details/comments | `↑`/`↓` or `Page Up`/`Page Down` |
-| Switch subreddits | `s` |
-| Search posts | `Ctrl+F` |
-| Open post in browser | `w` |
-| Back to list | `Esc` or `Tab` |
-| Quit | `q` |
-
-See [TUI_KEYBINDINGS.md](TUI_KEYBINDINGS.md) for complete keybinding documentation.
-
-### Web UI
-
-1. Open http://localhost:3000 in your web browser
-2. Select a subreddit from the sidebar
-3. Click on any post to view details
-4. Click "View Comments" to expand the comment section
-
-## ⚙️ Configuration
-
-Create/edit `config.json` in the project root:
-
-```json
-{
-  "tui": {
-    "default_subreddit": "sysadmin",
-    "posts_per_page": 200,
-    "list_height": 10,
-    "max_title_length": 80
-  },
-  "web": {
-    "default_subreddit": "sysadmin",
-    "posts_per_page": 20,
-    "theme": "dark"
-  },
-  "api": {
-    "base_url": "http://localhost:3002/api",
-    "timeout_seconds": 10
-  }
-}
-```
-
-👉 **See [CONFIGURATION.md](CONFIGURATION.md) for detailed configuration options**
-
-## 🏗️ Project Structure
-
-```
-redditiew-local/
-├── apps/
-│   ├── tui/                    # Terminal User Interface (Go)
-│   │   └── main.go            # TUI application
-│   └── web/                   # Web interface (placeholder)
-├── packages/
-│   ├── api/                   # API server implementation
-│   └── reddit-scraper/        # Reddit data scraper
-├── api-server.js              # API server (JavaScript)
-├── config.json                # Configuration file
-├── package.json               # Node.js dependencies
-├── README.md                  # This file
-├── QUICKSTART.md              # Quick start guide
-├── CONFIGURATION.md           # Configuration reference
-└── ARCHITECTURE.md            # Technical architecture
-```
-
-## 🔧 System Requirements
-
-### Minimum Requirements
-- **Go** 1.19+ (for TUI)
-- **Node.js** 16+ (for API server)
-- **npm** 7+
-- **Terminal** with 80x24 character minimum
-
-### Recommended
-- **Go** 1.21+
-- **Node.js** 18+ LTS
-- **Terminal** with 120x40 character minimum
-- **Modern OS** (Windows 10+, Ubuntu 20.04+, macOS 10.15+)
-
-## 🌐 API Reference
-
-The application uses a local REST API server running on `localhost:3002`.
-
-### Key Endpoints
-
-**Get Posts from Subreddit**
-```
-GET /api/r/:subreddit.json?limit=200
-```
-
-**Get Comments for Post**
-```
-GET /api/r/:subreddit/comments/:postid
-```
-
-See the API server implementation in `api-server.js` for complete details.
-
-## 🐛 Troubleshooting
-
-### TUI Won't Start
-```bash
-# Check if API server is running
-curl http://localhost:3002/api/r/sysadmin.json
-
-# Rebuild the binary
-cd apps/tui && go build -o redditview .
-
-# Check Go installation
-go version
-```
-
-### Comments Not Loading
-- Ensure API server is running: `npm start`
-- Check your internet connection
-- Verify the subreddit name is valid
-- Try refreshing with `F5`
-
-### Performance Issues
-- Increase terminal window size (minimum 80x24)
-- Reduce `posts_per_page` in config.json
-- Ensure system has at least 512MB RAM
-
-## 📋 System Support
-
-| OS | Status | Notes |
-|----|---------| ------|
-| Linux | ✅ Fully Supported | Tested on Ubuntu, Fedora, Arch |
-| Windows | ✅ Fully Supported | Windows 10 and newer |
-| macOS | ✅ Fully Supported | Intel and Apple Silicon |
-
-## 🔗 Key Dependencies
-
-### Backend
-- **Go** - TUI application language
-- **Bubble Tea** - TUI framework
-- **Node.js/Express** - API server
-- **Axios** - HTTP client
-
-### Frontend (Web)
-- **React** - UI framework
-- **Tailwind CSS** - Styling
-- **Axios** - HTTP client
-
-## 📝 Recent Changes
-
-### Latest Features (v0.2.0)
-- ✨ Enhanced comment scrolling with proper height calculation
-- ✨ Open posts directly in browser with `w` key
-- ✨ Increased page scroll distance for faster navigation
-- ✨ 200 posts per page by default (up from 50)
-- 🐛 Fixed comment scrolling state propagation
-- 🐛 Fixed list display bug affecting post visibility
-
-See [git log](https://github.com/yourusername/redditiew-local/commits) for complete history.
-
-## 🤝 Contributing
-
-We welcome contributions! Please see [DEVELOPMENT.md](DEVELOPMENT.md) for guidelines.
-
-## 📄 License
-
-This project is licensed under the MIT License - see LICENSE file for details.
-
-## 🙋 Support & Feedback
-
-- **Repository**: [GitHub - nicthegarden/redditiew](https://github.com/nicthegarden/redditiew)
-- **Issues**: [GitHub Issues](https://github.com/nicthegarden/redditiew/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/nicthegarden/redditiew/discussions)
-
-## 🎉 Acknowledgments
-
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea) - TUI framework
-- [Lipgloss](https://github.com/charmbracelet/lipgloss) - Terminal styling
-- Reddit - Data source
-
----
-
-**Happy browsing! 🚀**
-
-For more information, see the [complete documentation](#-documentation).

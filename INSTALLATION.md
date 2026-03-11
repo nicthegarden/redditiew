@@ -483,7 +483,7 @@ npm list -g --depth=0
 npm start
 
 # In another terminal:
-curl http://localhost:3002/api/r/sysadmin.json | jq '. | keys' | head -10
+curl http://localhost:8765/api/r/sysadmin.json | jq '. | keys' | head -10
 ```
 
 **4. Test TUI**
@@ -603,7 +603,7 @@ npm start
 
 **Check API is running:**
 ```bash
-curl http://localhost:3002/api/r/sysadmin.json
+curl http://localhost:8765/api/r/sysadmin.json
 ```
 
 If this fails:

@@ -277,7 +277,7 @@ cd ~/Projects/redditiew-local
 **Test 1: API Server is Responding**
 ```bash
 # In a new terminal, run:
-curl -s http://localhost:3002/api/r/sysadmin.json | head -20
+curl -s http://localhost:8765/api/r/sysadmin.json | head -20
 ```
 
 Expected: JSON data with posts (not an error)
@@ -344,7 +344,7 @@ You can customize RedditView by editing `config.json`:
     "max_title_length": 80
   },
   "api": {
-    "base_url": "http://localhost:3002/api",
+    "base_url": "http://localhost:8765/api",
     "timeout_seconds": 10
   }
 }

@@ -44,7 +44,7 @@ Configuration is managed through `config.json` in the project root directory.
     "theme": "dark"
   },
   "api": {
-    "base_url": "http://localhost:3002/api",
+    "base_url": "http://localhost:8765/api",
     "timeout_seconds": 10
   }
 }
@@ -256,7 +256,7 @@ Same format as TUI setting (see [TUI Settings](#tui-settings)).
 
 ### base_url
 **Type:** `string`  
-**Default:** `"http://localhost:3002/api"`  
+**Default:** `"http://localhost:8765/api"`  
 **Description:** URL of the API server
 
 **Default Format:**
@@ -270,7 +270,7 @@ http://localhost:PORT/api
 - Do NOT include trailing slash
 
 **Use Cases:**
-- **Local development:** `"http://localhost:3002/api"` (default)
+- **Local development:** `"http://localhost:8765/api"` (default)
 - **Remote server:** `"http://api.example.com:3002/api"`
 - **Docker:** `"http://api-container:3002/api"`
 
@@ -347,7 +347,7 @@ For users with slow internet or old computers:
     "max_title_length": 60
   },
   "api": {
-    "base_url": "http://localhost:3002/api",
+    "base_url": "http://localhost:8765/api",
     "timeout_seconds": 20
   }
 }
@@ -372,7 +372,7 @@ For users with high-speed internet and large displays:
     "max_title_length": 120
   },
   "api": {
-    "base_url": "http://localhost:3002/api",
+    "base_url": "http://localhost:8765/api",
     "timeout_seconds": 8
   }
 }
@@ -462,7 +462,7 @@ cat > config.json << 'EOF'
     "theme": "dark"
   },
   "api": {
-    "base_url": "http://localhost:3002/api",
+    "base_url": "http://localhost:8765/api",
     "timeout_seconds": 10
   }
 }
@@ -508,7 +508,7 @@ If posts load slowly:
 1. Reduce `posts_per_page` (start with 100)
 2. Check internet connection
 3. Increase `timeout_seconds` to 20-30
-4. Check if API server is running: `curl http://localhost:3002/api/r/sysadmin.json`
+4. Check if API server is running: `curl http://localhost:8765/api/r/sysadmin.json`
 
 ---
 
