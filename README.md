@@ -36,6 +36,30 @@ A modern, feature-rich Reddit client available in both Terminal User Interface (
 - **Keyboard Navigation** - Arrow keys, PageDown, Spacebar for efficient browsing
 - **Touch Gestures** - Swipe left/right for post navigation, up/down for scrolling
 - **Auto-load Comments** - Comments load automatically when post is selected
+- **Dual Search Modes** - Filter local posts or search all of Reddit
+
+### Web UI Search Modes
+
+The search functionality in the Web UI offers two distinct modes:
+
+#### 1. **Local Filtering** (Default)
+- **How:** Type in the filter bar (middle input)
+- **Scope:** Filters posts from the current subreddit
+- **Speed:** Instant (client-side)
+- **Coverage:** Searches post titles only
+- **Result:** Narrows down already-loaded posts
+
+#### 2. **Reddit-wide Search**
+- **How:** Type in filter bar + Press `Enter`
+- **Scope:** Searches across all of Reddit
+- **Speed:** Network request required (~1-2 seconds)
+- **Coverage:** Reddit's full search algorithm
+- **Result:** Loads new search results replacing current posts
+
+**Example Workflow:**
+1. Load r/sysadmin (shows 50 posts)
+2. Type "python" → Filters to show only Python-related posts from r/sysadmin
+3. Press Enter → Searches all of Reddit for "python" (replaces posts with global results)
 
 ## 🏗️ Architecture
 

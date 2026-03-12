@@ -353,7 +353,12 @@ export default function App() {
       const searchUrl = `${API_BASE}/search.json?q=${query}&type=link&limit=50`
       
       fetch(searchUrl)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Search failed (HTTP ${res.status}): ${res.statusText}`)
+          }
+          return res.json()
+        })
         .then(data => {
           const items = data.data.children as RedditPost[]
           setPosts(items)
@@ -603,8 +608,12 @@ export default function App() {
             className="filter-input"
             placeholder={isRedditSearch ? "Search Reddit..." : "Filter posts... (Enter to search Reddit)"}
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => {
+              setSearch(e.target.value)
+              if (isRedditSearch) setIsRedditSearch(false)
+            }}
             onFocus={() => setFocused('filter')}
+            onKeyDown={handleKeyDown}
           />
         </div>
         
