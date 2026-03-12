@@ -121,6 +121,65 @@ Mobile thread listing now has disabled horizontal scrolling to prevent accidenta
 - **Improved Touch Experience** - Focus on vertical scrolling through the feed
 - **Better UX** - Prevents frustrating horizontal swipes on narrow screens
 
+## ⌨️ Keyboard Shortcuts & Navigation
+
+### Web UI - Navigation Keys
+
+#### Thread List (Left Pane)
+| Key | Action |
+|-----|--------|
+| **↑ / ↓** | Move selection up/down in thread list |
+| **Enter** | Select highlighted thread (show in right pane) |
+| **Tab** | Cycle through: Search → Filter → Thread List |
+| **Shift+Tab** | Cycle backwards through inputs |
+| **Spacebar** | Advance to next thread (when post detail is open) |
+
+#### Post Detail View (Right Pane)
+| Key | Action |
+|-----|--------|
+| **Spacebar** | Scroll down in post detail; advances to next thread when at bottom |
+| **PageDown** | Scroll down 400px in post detail; auto-advance when at bottom |
+| **PageUp** | Scroll up 400px in post detail |
+| **→ (Right Arrow)** | Scroll down 150px; auto-advance to next post when at bottom |
+| **← (Left Arrow)** | Scroll up 150px in post detail |
+
+#### Search & Filtering
+| Key | Action |
+|-----|--------|
+| **Tab** (from Search) | Move to Filter field |
+| **Tab** (from Filter) | Move to Thread List |
+| **Enter** (in Filter) | Search Reddit within current subreddit |
+
+#### Reader Mode (Mobile)
+| Action | Method |
+|--------|--------|
+| **Enter Reader Mode** | Tap 📖 Reader Mode button (bottom of thread list) |
+| **Exit Reader Mode** | Tap 📖 Exit Reader button (top of post detail) |
+
+### Web UI - Touch Gestures
+
+| Gesture | Action |
+|---------|--------|
+| **Swipe Left** | Navigate to next post |
+| **Swipe Right** | Navigate to previous post |
+| **Swipe Down** | Scroll up in post detail |
+| **Swipe Up** | Scroll down in post detail |
+
+### Navigation Flow
+
+**Typical Browsing Workflow:**
+1. Click in **Search** field → Enter subreddit name → Press Enter
+2. Use **↑/↓** to browse thread list
+3. Press **Enter** to open thread in right pane
+4. Use **Spacebar** to scroll and auto-advance through posts
+5. **Spacebar** at bottom of post → Automatically selects next thread
+
+**Mobile Reader Mode Workflow:**
+1. Tap **📖 Reader Mode** button
+2. Thread list hides, post expands to full width
+3. Scroll to read content
+4. Tap **📖 Exit Reader** to return to split view
+
 ## 🏗️ Architecture
 
 RedditView uses a **local proxy server architecture** instead of direct Reddit API access.

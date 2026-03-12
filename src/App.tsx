@@ -129,13 +129,13 @@ interface PostItemProps {
 }
 
 function PostItem({ post, active, onClick }: PostItemProps) {
-  const thumb = getThumb(post)
-  const p = post.data
-  
-  return (
-    <div className={`post-item ${active ? 'active' : ''}`} onClick={onClick}>
-      {thumb && <img src={thumb} alt="" className="post-thumb" loading="lazy" />}
-      <div className="post-info">
+   const thumb = getThumb(post)
+   const p = post.data
+   
+   return (
+     <div className={`post-item ${active ? 'active' : ''}`} onClick={onClick}>
+       {thumb && <span className="post-image-indicator">📷</span>}
+       <div className="post-info">
         <div className="post-title">{p.title}</div>
         <div className="post-meta">
           <span className="sub">r/{p.subreddit}</span>
@@ -644,17 +644,17 @@ export default function App() {
           )}
            {loading && posts.length > 0 && <div className="loading">Loading more...</div>}
          </div>
-       </div>
-       
-       <div className="version-footer">
-         <span className="version-text">v{APP_VERSION}</span>
-         <button 
-           className="reader-mode-btn"
-           onClick={() => setReaderMode(!readerMode)}
-           title={readerMode ? "Exit Reader Mode" : "Enter Reader Mode"}
-         >
-           {readerMode ? '📖 Exit Reader' : '📖 Reader Mode'}
-         </button>
+         
+         <div className="version-footer">
+           <span className="version-text">v{APP_VERSION}</span>
+           <button 
+             className="reader-mode-btn"
+             onClick={() => setReaderMode(!readerMode)}
+             title={readerMode ? "Exit Reader Mode" : "Enter Reader Mode"}
+           >
+             {readerMode ? '📖 Exit Reader' : '📖 Reader Mode'}
+           </button>
+         </div>
        </div>
        
        <div className="right-pane" ref={rightPaneRef} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
