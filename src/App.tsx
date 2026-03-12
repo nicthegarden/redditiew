@@ -580,7 +580,7 @@ export default function App() {
   }, [selectedIndex, filteredPosts.length])
 
   return (
-    <div className="app">
+    <div className={`app ${readerMode ? 'reader-mode' : ''}`}>
       <div className="left-pane" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <form className="header" onSubmit={handleSubmit} tabIndex={-1}>
           <input

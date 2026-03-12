@@ -624,6 +624,17 @@ body.light {
   }
 }
 
+/* Reader Mode adjustments for mobile/tablet */
+@media (max-width: 768px) {
+  .app.reader-mode .left-pane {
+    display: none;
+  }
+  
+  .app.reader-mode .right-pane {
+    height: 100%;
+  }
+}
+
 @media (max-width: 480px) {
   .left-pane {
     height: 40%;

@@ -75,14 +75,20 @@ On mobile and tablet devices, a **Reader Mode** button appears next to the versi
 
 **How to Use:**
 - Tap the 📖 **Reader Mode** button (bottom-left on mobile)
-- Thread listing and search bar disappear
-- Read the selected post with maximum screen space
-- Tap 📖 **Exit Reader** to restore the thread list
+- Thread listing and search bar hide instantly
+- Right pane **expands to full height** for maximum reading space
+- Post content displays with full text visibility
+- Tap 📖 **Exit Reader** to restore the thread list and search
+
+**Layout Changes:**
+- **Normal Mode**: Left pane 50% / Right pane 50% (split view)
+- **Reader Mode**: Left pane hidden / Right pane 100% height (full-screen reading)
 
 **Benefits:**
 - Focus on reading without list distractions
-- Maximize vertical space for post content
+- Maximize vertical space for post content and comments
 - Comfortable reading on small screens
+- Post text fully visible without scrolling layout
 - Easy toggle - one tap to switch back
 
 **Desktop Note:** Reader Mode button is hidden on desktop/laptop (≥769px width) as the dual-pane layout is already optimized for those screens.
@@ -512,12 +518,13 @@ netstat -ano | findstr :8765  # Windows
 ## 📝 Recent Changes
 
 ### Latest Release (v1.1.4)
-- ✨ **NEW: Mobile Reader Mode** - Cleaner reading experience on mobile/tablet
-  - Hide thread listing to focus on reading selected post
-  - Reader Mode button next to version (mobile only)
-  - Hide search bar in Reader Mode for maximum space
-  - Toggle button to switch between modes instantly
-  - Desktop view unaffected (button hidden on desktop)
+- ✨ **NEW: Mobile Reader Mode** - Distraction-free reading on mobile/tablet
+  - Thread listing and search bar hide to maximize space
+  - Right pane expands to **100% height** for full-screen reading
+  - Post text fully visible with no layout constraints
+  - Reader Mode button next to version (mobile only, hidden on desktop)
+  - One-tap toggle to switch between normal and reader modes
+  - Keyboard and touch gestures still fully functional in Reader Mode
 
 ### Previous Release (v1.1.3)
 - ✨ **NEW: Subreddit-Scoped Search Endpoint** - `/api/r/:subreddit/search.json?q=:query`
