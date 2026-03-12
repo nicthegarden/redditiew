@@ -37,6 +37,7 @@ A modern, feature-rich Reddit client available in both Terminal User Interface (
 - **Touch Gestures** - Swipe left/right for post navigation, up/down for scrolling
 - **Auto-load Comments** - Comments load automatically when post is selected
 - **Dual Search Modes** - Filter local posts or search all of Reddit
+- **Mobile Reader Mode** - Clean reading view that hides thread list on mobile
 
 ### Web UI Search Modes
 
@@ -67,6 +68,24 @@ The search functionality in the Web UI offers two distinct modes:
 - Pressing Enter searches **within the current subreddit**, not all of Reddit
 - This keeps you focused on the community you're browsing
 - Change subreddit to search in a different community
+
+### Mobile Reader Mode (v1.1.4+)
+
+On mobile and tablet devices, a **Reader Mode** button appears next to the version footer. This feature provides a distraction-free reading experience:
+
+**How to Use:**
+- Tap the 📖 **Reader Mode** button (bottom-left on mobile)
+- Thread listing and search bar disappear
+- Read the selected post with maximum screen space
+- Tap 📖 **Exit Reader** to restore the thread list
+
+**Benefits:**
+- Focus on reading without list distractions
+- Maximize vertical space for post content
+- Comfortable reading on small screens
+- Easy toggle - one tap to switch back
+
+**Desktop Note:** Reader Mode button is hidden on desktop/laptop (≥769px width) as the dual-pane layout is already optimized for those screens.
 
 ## 🏗️ Architecture
 
