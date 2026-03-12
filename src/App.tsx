@@ -191,6 +191,8 @@ export default function App() {
   const [commentScrollPos, setCommentScrollPos] = useState(0)
   const [commentIsAtBottom, setCommentIsAtBottom] = useState(false)
   const [readerMode, setReaderMode] = useState(false)
+  const [twoFingerStartX, setTwoFingerStartX] = useState(0)
+  const [fingerCount, setFingerCount] = useState(0)
   
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -245,6 +247,39 @@ export default function App() {
       }
     }
   }, [])
+
+  // Two-finger swipe to change subreddit
+  const handleTwoFingerTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      setFingerCount(2)
+      setTwoFingerStartX(e.touches[0].clientX)
+    }
+  }, [])
+
+  const handleTwoFingerTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (fingerCount === 2 && e.changedTouches.length > 0) {
+      const endX = e.changedTouches[0].clientX
+      const distance = Math.abs(endX - twoFingerStartX)
+      const threshold = 100
+
+      if (distance > threshold) {
+        const currentIndex = SUBREDDIT_SUGGESTIONS.indexOf(sub)
+        let nextIndex = currentIndex
+
+        if (endX > twoFingerStartX) {
+          // Swiped right → previous subreddit
+          nextIndex = currentIndex === 0 ? SUBREDDIT_SUGGESTIONS.length - 1 : currentIndex - 1
+        } else {
+          // Swiped left → next subreddit
+          nextIndex = (currentIndex + 1) % SUBREDDIT_SUGGESTIONS.length
+        }
+
+        handleSub(SUBREDDIT_SUGGESTIONS[nextIndex])
+      }
+
+      setFingerCount(0)
+    }
+  }, [fingerCount, twoFingerStartX, sub])
 
   const { handleTouchStart, handleTouchEnd } = useTouchGestures(
     handleSwipeLeft,
@@ -587,7 +622,7 @@ export default function App() {
   }, [selectedIndex, filteredPosts.length])
 
   return (
-    <div className={`app ${readerMode ? 'reader-mode' : ''}`}>
+    <div className={`app ${readerMode ? 'reader-mode' : ''}`} onTouchStart={handleTwoFingerTouchStart} onTouchEnd={handleTwoFingerTouchEnd}>
       {readerMode && (
         <button 
           className="reader-mode-close-btn"
