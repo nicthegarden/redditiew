@@ -588,6 +588,16 @@ export default function App() {
 
   return (
     <div className={`app ${readerMode ? 'reader-mode' : ''}`}>
+      {readerMode && (
+        <button 
+          className="reader-mode-close-btn"
+          onClick={() => setReaderMode(false)}
+          title="Exit Reader Mode (Esc)"
+          aria-label="Exit Reader Mode"
+        >
+          ✕
+        </button>
+      )}
       <div className="left-pane" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <form className="header" onSubmit={handleSubmit} tabIndex={-1}>
           <input
@@ -610,17 +620,6 @@ export default function App() {
             </button>
           ))}
         </div>
-
-        {readerMode && (
-          <button 
-            className="reader-mode-close-btn"
-            onClick={() => setReaderMode(false)}
-            title="Exit Reader Mode (Esc)"
-            aria-label="Exit Reader Mode"
-          >
-            ✕
-          </button>
-        )}
 
         <div className={`filter-bar ${readerMode ? 'hidden' : ''}`}>
           <input
