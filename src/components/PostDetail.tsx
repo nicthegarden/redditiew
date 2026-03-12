@@ -166,7 +166,6 @@ export default function PostDetail({ post, onNextPost, onPreviousPost, canGoNext
         >
           Next ➡️
         </button>
-        <button className="action-btn">💾 Save</button>
         <a href={`https://reddit.com${data.permalink}`} target="_blank" rel="noopener noreferrer" className="action-btn">
           🔗 Open on Reddit
         </a>

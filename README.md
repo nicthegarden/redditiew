@@ -38,6 +38,7 @@ A modern, feature-rich Reddit client available in both Terminal User Interface (
 - **Auto-load Comments** - Comments load automatically when post is selected
 - **Dual Search Modes** - Filter local posts or search all of Reddit
 - **Mobile Reader Mode** - Clean reading view that hides thread list on mobile
+- **Sticky Navigation Bar** - Post action buttons stay visible while scrolling through content
 
 ### Web UI Search Modes
 
@@ -603,6 +604,16 @@ netstat -ano | findstr :8765  # Windows
 - **React Router** - Client-side routing
 
 ## 📝 Recent Changes
+
+### Latest Release (v2.11.0)
+- ✨ **NEW: Sticky Post Action Bar** - Navigation buttons stay visible while scrolling through post content
+  - Post action buttons remain fixed at the top during vertical scrolling
+  - Keeps `⬅️ Previous`, `Next ➡️`, and `🔗 Open on Reddit` buttons accessible
+  - Improved UX for long-form post reading on desktop and mobile
+  - Smooth scrolling with visual separation via box-shadow
+- 🗑️ **REMOVED: Save Button** - Streamlined post actions to essential navigation only
+  - Removed save/bookmark button (💾) from post detail view
+  - Focuses action bar on post navigation and opening in Reddit
 
 ### Latest Release (v2.0.0)
 - ✨ **NEW: Featured Media Display** - Images and videos now appear at the top of post detail pane
