@@ -48,18 +48,25 @@ The search functionality in the Web UI offers two distinct modes:
 - **Speed:** Instant (client-side)
 - **Coverage:** Searches post titles only
 - **Result:** Narrows down already-loaded posts
+- **No network request**
 
-#### 2. **Reddit-wide Search**
-- **How:** Type in filter bar + Press `Enter`
-- **Scope:** Searches across all of Reddit
+#### 2. **Subreddit-Scoped Search**
+- **How:** Type in filter bar + Press `Enter` (while on a subreddit)
+- **Scope:** Searches **within the current subreddit only**
 - **Speed:** Network request required (~1-2 seconds)
-- **Coverage:** Reddit's full search algorithm
-- **Result:** Loads new search results replacing current posts
+- **Coverage:** Reddit's search algorithm for the subreddit
+- **Result:** Loads new search results within the subreddit
 
 **Example Workflow:**
 1. Load r/sysadmin (shows 50 posts)
-2. Type "python" → Filters to show only Python-related posts from r/sysadmin
-3. Press Enter → Searches all of Reddit for "python" (replaces posts with global results)
+2. Type "python" → Filters to show only Python-related posts from r/sysadmin (instant, 10 posts shown)
+3. Press Enter → Searches r/sysadmin for "python" (network request, loads 50 new results from r/sysadmin)
+4. Switch to r/programming, type "python", press Enter → Now searches r/programming for "python"
+
+**Key Difference:**
+- Pressing Enter searches **within the current subreddit**, not all of Reddit
+- This keeps you focused on the community you're browsing
+- Change subreddit to search in a different community
 
 ## 🏗️ Architecture
 

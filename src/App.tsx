@@ -344,13 +344,14 @@ export default function App() {
 
   const handleSearchSubmit = () => {
     if (search.trim()) {
-      // Search Reddit across all subreddits
+      // Search scoped to current subreddit, or all Reddit if search is empty
       setIsRedditSearch(true)
       setLoading(true)
       setError(null)
       
       const query = encodeURIComponent(search.trim())
-      const searchUrl = `${API_BASE}/search.json?q=${query}&type=link&limit=50`
+      // Search within the current subreddit
+      const searchUrl = `${API_BASE}/r/${sub}/search.json?q=${query}&type=link&limit=50`
       
       fetch(searchUrl)
         .then(res => {
@@ -362,7 +363,7 @@ export default function App() {
         .then(data => {
           const items = data.data.children as RedditPost[]
           setPosts(items)
-          setSub(`search: "${search}"`)
+          setSub(`${sub} search: "${search}"`)
           setLoading(false)
         })
         .catch(err => {
