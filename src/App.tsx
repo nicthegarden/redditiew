@@ -365,6 +365,14 @@ export default function App() {
     }
   }, [cached, saveToCache])
 
+  // Auto-select first post when posts load (fixes empty reader mode after subreddit change)
+  useEffect(() => {
+    if (posts.length > 0 && selected === null) {
+      setSelected(posts[0])
+      setSelectedIndex(0)
+    }
+  }, [posts, selected])
+
   const handleSub = (subreddit: string) => {
     setInput(subreddit)
     setSelected(null)
