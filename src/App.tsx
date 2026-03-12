@@ -551,6 +551,13 @@ export default function App() {
             }
           }
         }
+      } else if (e.key === 'Escape') {
+        // Escape: exit reader mode if active
+        if (readerMode) {
+          e.preventDefault()
+          e.stopPropagation()
+          setReaderMode(false)
+        }
       }
     }
     
@@ -603,6 +610,17 @@ export default function App() {
             </button>
           ))}
         </div>
+
+        {readerMode && (
+          <button 
+            className="reader-mode-close-btn"
+            onClick={() => setReaderMode(false)}
+            title="Exit Reader Mode (Esc)"
+            aria-label="Exit Reader Mode"
+          >
+            ✕
+          </button>
+        )}
 
         <div className={`filter-bar ${readerMode ? 'hidden' : ''}`}>
           <input

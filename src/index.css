@@ -770,6 +770,7 @@ body.light {
    display: flex;
    justify-content: space-between;
    align-items: center;
+   gap: 12px;
    color: var(--text-secondary);
    font-size: 12px;
    border-top: 1px solid var(--border-color);
@@ -1010,6 +1011,39 @@ body.light {
    display: flex !important;
 }
 
+/* Floating close button for reader mode - always accessible */
+.reader-mode-close-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent-orange);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  line-height: 1;
+}
+
+.reader-mode-close-btn:hover {
+  background: #ff5a1e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transform: scale(1.05);
+}
+
+.reader-mode-close-btn:active {
+  transform: scale(0.95);
+}
+
 /* Mobile-only Reader Mode button */
 @media (min-width: 769px) {
   .reader-mode-btn {
@@ -1022,14 +1056,18 @@ body.light {
   .version-footer {
     padding: 8px 12px;
     gap: 8px;
+    justify-content: center;
   }
 
   .version-text {
     font-size: 11px;
+    text-align: center;
+    flex: 1;
   }
 
   .reader-mode-btn {
     padding: 6px 10px;
     font-size: 11px;
+    flex-shrink: 0;
   }
 }
