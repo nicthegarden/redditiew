@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import CommentsList from './CommentsList'
 
 interface PostDetailProps {
@@ -14,6 +13,19 @@ interface PostDetailProps {
       selftext?: string
       url?: string
       permalink: string
+      thumbnail?: string
+      preview?: {
+        images?: Array<{
+          source?: { url: string }
+          resolutions?: Array<{ url: string }>
+        }>
+      }
+      is_video?: boolean
+      media?: {
+        reddit_video?: {
+          fallback_url?: string
+        }
+      }
     }
   } | null
 }
@@ -32,9 +44,35 @@ function formatNum(n: number): string {
   return n.toString()
 }
 
-export default function PostDetail({ post }: PostDetailProps) {
-  const [loading, setLoading] = useState(false)
+function getMediaUrl(data: any): string | null {
+  // Check for direct image/video URL
+  if (data.url) {
+    const url = data.url.toLowerCase()
+    // Check if it's a direct media URL
+    if (url.includes('imgur.com') || url.includes('gfycat.com') || url.includes('redgifs.com')) {
+      return data.url
+    }
+  }
 
+  // Check for preview images
+  if (data.preview?.images?.[0]?.source?.url) {
+    return data.preview.images[0].source.url.replace(/&amp;/g, '&')
+  }
+
+  // Check for Reddit video
+  if (data.is_video && data.media?.reddit_video?.fallback_url) {
+    return data.media.reddit_video.fallback_url
+  }
+
+  // Check for thumbnail
+  if (data.thumbnail && data.thumbnail.startsWith('http')) {
+    return data.thumbnail
+  }
+
+  return null
+}
+
+export default function PostDetail({ post }: PostDetailProps) {
   if (!post) {
     return (
       <div className="post-detail-empty">
@@ -59,6 +97,39 @@ export default function PostDetail({ post }: PostDetailProps) {
           <span>💬 {formatNum(data.num_comments)}</span>
         </div>
       </div>
+
+      {(() => {
+        const mediaUrl = getMediaUrl(data)
+        if (mediaUrl) {
+          // Check if it's a video or image
+          const isVideo = data.is_video || mediaUrl.includes('.mp4') || mediaUrl.includes('.webm')
+          
+          if (isVideo) {
+            return (
+              <div className="post-media-container">
+                <video 
+                  controls 
+                  className="post-media-video"
+                  src={mediaUrl}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            )
+          } else {
+            return (
+              <div className="post-media-container">
+                <img 
+                  src={mediaUrl} 
+                  alt="Post media" 
+                  className="post-media-image"
+                />
+              </div>
+            )
+          }
+        }
+        return null
+      })()}
 
       {isTextPost && data.selftext && (
         <div className="post-body">

@@ -93,6 +93,34 @@ On mobile and tablet devices, a **Reader Mode** button appears next to the versi
 
 **Desktop Note:** Reader Mode button is hidden on desktop/laptop (≥769px width) as the dual-pane layout is already optimized for those screens.
 
+### Featured Media Display (v2.0.0+)
+
+Thread posts now display featured images and videos at the top of the post detail pane for an enhanced reading experience:
+
+**Features:**
+- **Automatic Media Detection** - Automatically displays images/videos from posts
+- **Image Support** - Shows preview images from post thumbnails and Reddit's image API
+- **Video Support** - Embedded video player for Reddit videos and external video URLs
+- **Smart Media Selection** - Prioritizes high-quality images and Reddit videos
+- **Responsive Container** - Media scales appropriately on all screen sizes
+- **Fallback Handling** - Gracefully handles posts without media
+
+**Supported Media Types:**
+- Reddit preview images (from `preview.images`)
+- Direct image URLs (Imgur, Reddit-hosted)
+- Reddit native videos
+- External video URLs (MP4, WebM)
+
+### Mobile Scrolling Improvements (v2.0.0+)
+
+Mobile thread listing now has disabled horizontal scrolling to prevent accidental swipe navigation:
+
+**Changes:**
+- **No Horizontal Scroll** - Thread list locked to viewport width on mobile devices
+- **Cleaner UI** - Post titles and content stay fully visible without overflow
+- **Improved Touch Experience** - Focus on vertical scrolling through the feed
+- **Better UX** - Prevents frustrating horizontal swipes on narrow screens
+
 ## 🏗️ Architecture
 
 RedditView uses a **local proxy server architecture** instead of direct Reddit API access.
@@ -517,8 +545,20 @@ netstat -ano | findstr :8765  # Windows
 
 ## 📝 Recent Changes
 
-### Latest Release (v1.1.4)
-- ✨ **NEW: Mobile Reader Mode** - Distraction-free reading on mobile/tablet
+### Latest Release (v2.0.0)
+- ✨ **NEW: Featured Media Display** - Images and videos now appear at the top of post detail pane
+  - Automatic detection of preview images from posts
+  - Reddit native video support with embedded video player
+  - External image and video URL support
+  - Responsive media containers that scale on all devices
+  - Smart fallback for posts without media
+- ✨ **NEW: Mobile Scrolling Improvements** - Horizontal scroll disabled on thread listing
+  - Prevents accidental swipe navigation on mobile devices
+  - Post titles stay fully visible without horizontal overflow
+  - Improved touch experience focused on vertical scrolling
+
+### Previous Release (v1.1.4)
+- ✨ **Mobile Reader Mode** - Distraction-free reading on mobile/tablet
   - Thread listing and search bar hide to maximize space
   - Right pane expands to **100% height** for full-screen reading
   - Post text fully visible with no layout constraints

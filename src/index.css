@@ -444,6 +444,29 @@ body.light {
   background: var(--bg-tertiary);
 }
 
+.post-media-container {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-primary);
+  max-height: 400px;
+}
+
+.post-media-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  max-height: 400px;
+}
+
+.post-media-video {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 400px;
+}
+
 .post-actions {
   display: flex;
   gap: 16px;
@@ -627,6 +650,10 @@ body.light {
   .load-btn {
     font-size: 13px;
     padding: 8px 16px;
+  }
+
+  .posts-list {
+    overflow-x: hidden;
   }
 }
 
