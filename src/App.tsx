@@ -1,9 +1,71 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import PostDetail from './components/PostDetail'
 import { loadConfig, getConfig } from './config'
+import { APP_VERSION } from './version'
 
 const PROXY = '/api'
 const API_BASE = '/api'
+
+// Touch gesture handler
+interface TouchStartPos {
+  x: number
+  y: number
+  time: number
+}
+
+function useTouchGestures(onSwipeLeft: () => void, onSwipeRight: () => void, onSwipeDown: () => void, onSwipeUp: () => void) {
+  const touchStartRef = useRef<TouchStartPos | null>(null)
+  
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0]
+      touchStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        time: Date.now()
+      }
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return
+    
+    const touch = e.changedTouches[0]
+    const dx = touch.clientX - touchStartRef.current.x
+    const dy = touch.clientY - touchStartRef.current.y
+    const dt = Date.now() - touchStartRef.current.time
+    
+    // Minimum swipe distance and maximum time
+    const minDistance = 50
+    const maxTime = 500
+    
+    if (dt > maxTime) return
+    
+    const absDx = Math.abs(dx)
+    const absDy = Math.abs(dy)
+    
+    // Swipe right (navigate to previous post)
+    if (dx > minDistance && absDx > absDy) {
+      onSwipeRight()
+    }
+    // Swipe left (navigate to next post)
+    else if (dx < -minDistance && absDx > absDy) {
+      onSwipeLeft()
+    }
+    // Swipe down (scroll up)
+    else if (dy > minDistance && absDy > absDx) {
+      onSwipeDown()
+    }
+    // Swipe up (scroll down)
+    else if (dy < -minDistance && absDy > absDx) {
+      onSwipeUp()
+    }
+    
+    touchStartRef.current = null
+  }
+
+  return { handleTouchStart, handleTouchEnd }
+}
 
 const SUBREDDIT_SUGGESTIONS = [
   'sysadmin', 'IT', 'linux', 'homelab', 'networking', 'devops', 'technology',
@@ -126,12 +188,69 @@ export default function App() {
     const saved = localStorage.getItem('theme')
     return (saved as 'dark' | 'light') || 'dark'
   })
+  const [commentScrollPos, setCommentScrollPos] = useState(0)
+  const [commentIsAtBottom, setCommentIsAtBottom] = useState(false)
   
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const filterRef = useRef<HTMLInputElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const rightPaneRef = useRef<HTMLDivElement>(null)
   const { cached, saveToCache } = usePostCache()
+
+  // Touch gesture handlers
+  const handleSwipeLeft = useCallback(() => {
+    // Swipe left = next post
+    const filteredPosts = search.trim()
+      ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
+      : posts
+    const nextIdx = Math.min(selectedIndex + 1, filteredPosts.length - 1)
+    if (nextIdx !== selectedIndex) {
+      setSelectedIndex(nextIdx)
+      setSelected(filteredPosts[nextIdx])
+    }
+  }, [selectedIndex, posts, search])
+
+  const handleSwipeRight = useCallback(() => {
+    // Swipe right = previous post
+    const filteredPosts = search.trim()
+      ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
+      : posts
+    const prevIdx = Math.max(selectedIndex - 1, 0)
+    if (prevIdx !== selectedIndex) {
+      setSelectedIndex(prevIdx)
+      setSelected(filteredPosts[prevIdx])
+    }
+  }, [selectedIndex, posts, search])
+
+  const handleSwipeDown = useCallback(() => {
+    // Swipe down = scroll up in right pane
+    const rightPane = rightPaneRef.current
+    if (rightPane) {
+      const postDetail = rightPane.querySelector('.post-detail')
+      if (postDetail) {
+        postDetail.scrollTop -= 150
+      }
+    }
+  }, [])
+
+  const handleSwipeUp = useCallback(() => {
+    // Swipe up = scroll down in right pane
+    const rightPane = rightPaneRef.current
+    if (rightPane) {
+      const postDetail = rightPane.querySelector('.post-detail')
+      if (postDetail) {
+        postDetail.scrollTop += 150
+      }
+    }
+  }, [])
+
+  const { handleTouchStart, handleTouchEnd } = useTouchGestures(
+    handleSwipeLeft,
+    handleSwipeRight,
+    handleSwipeDown,
+    handleSwipeUp
+  )
 
   // Load config on mount
   useEffect(() => {
@@ -257,9 +376,11 @@ export default function App() {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
         setSelectedIndex(prev => Math.min(prev + 1, filteredPosts.length - 1))
+        setSelected(filteredPosts[Math.min(selectedIndex + 1, filteredPosts.length - 1)])
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
         setSelectedIndex(prev => Math.max(prev - 1, 0))
+        setSelected(filteredPosts[Math.max(selectedIndex - 1, 0)])
       } else if (e.key === 'Enter') {
         e.preventDefault()
         if (filteredPosts[selectedIndex]) {
@@ -328,24 +449,107 @@ export default function App() {
     return () => document.removeEventListener('keydown', handleTab, true)
   }, [focused])
 
+  // Handle right pane navigation and scrolling
   useEffect(() => {
     const handleGlobalKeys = (e: KeyboardEvent) => {
-      if (e.key === 'PageDown' || e.key === 'PageUp') {
+      // Only handle navigation when a post is selected (right pane is active)
+      if (!selected) return
+
+      const rightPane = rightPaneRef.current
+      if (!rightPane) return
+
+      // Get the comments list element
+      const commentsList = rightPane.querySelector('.comments-list')
+      const postDetail = rightPane.querySelector('.post-detail')
+
+      if (e.key === 'PageDown') {
         e.preventDefault()
         e.stopPropagation()
-        if (iframeRef.current) {
-          try {
-            if (iframeRef.current.contentWindow) {
-              iframeRef.current.contentWindow.scrollBy(0, e.key === 'PageDown' ? 400 : -400)
+        
+        // Scroll right pane down
+        if (postDetail) {
+          postDetail.scrollTop += 400
+          
+          // Check if at bottom
+          const isAtBottom = postDetail.scrollHeight - postDetail.scrollTop <= postDetail.clientHeight + 50
+          if (isAtBottom && commentsList) {
+            // Move to next post
+            const filteredPosts = search.trim()
+              ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
+              : posts
+            const nextIdx = Math.min(selectedIndex + 1, filteredPosts.length - 1)
+            if (nextIdx !== selectedIndex) {
+              setSelectedIndex(nextIdx)
+              setSelected(filteredPosts[nextIdx])
             }
-          } catch {}
-          iframeRef.current.scrollTop += e.key === 'PageDown' ? 400 : -400
+          }
+        }
+      } else if (e.key === 'PageUp') {
+        e.preventDefault()
+        e.stopPropagation()
+        if (postDetail) {
+          postDetail.scrollTop -= 400
+        }
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        e.stopPropagation()
+        if (postDetail) {
+          postDetail.scrollTop += 150
+          
+          // Check if at bottom and advance to next post
+          const isAtBottom = postDetail.scrollHeight - postDetail.scrollTop <= postDetail.clientHeight + 50
+          if (isAtBottom && commentsList) {
+            const filteredPosts = search.trim()
+              ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
+              : posts
+            const nextIdx = Math.min(selectedIndex + 1, filteredPosts.length - 1)
+            if (nextIdx !== selectedIndex) {
+              setSelectedIndex(nextIdx)
+              setSelected(filteredPosts[nextIdx])
+              // Reset scroll for new post
+              setTimeout(() => {
+                postDetail.scrollTop = 0
+              }, 0)
+            }
+          }
+        }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        e.stopPropagation()
+        if (postDetail) {
+          postDetail.scrollTop -= 150
+        }
+      } else if (e.key === ' ') {
+        // Spacebar: scroll comments down, auto-advance when at bottom
+        e.preventDefault()
+        e.stopPropagation()
+        
+        if (postDetail) {
+          postDetail.scrollTop += 400
+          
+          // Check if at bottom and advance to next post
+          const isAtBottom = postDetail.scrollHeight - postDetail.scrollTop <= postDetail.clientHeight + 50
+          if (isAtBottom && commentsList) {
+            const filteredPosts = search.trim()
+              ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
+              : posts
+            const nextIdx = Math.min(selectedIndex + 1, filteredPosts.length - 1)
+            if (nextIdx !== selectedIndex) {
+              setSelectedIndex(nextIdx)
+              setSelected(filteredPosts[nextIdx])
+              // Reset scroll for new post
+              setTimeout(() => {
+                postDetail.scrollTop = 0
+              }, 0)
+            }
+          }
         }
       }
     }
+    
     document.addEventListener('keydown', handleGlobalKeys, true)
     return () => document.removeEventListener('keydown', handleGlobalKeys, true)
-  }, [])
+  }, [selected, selectedIndex, posts, search])
 
   useEffect(() => {
     const filtered = posts.filter(p => 
@@ -370,7 +574,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="left-pane">
+      <div className="left-pane" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <form className="header" onSubmit={handleSubmit} tabIndex={-1}>
           <input
             ref={searchRef}
@@ -409,7 +613,10 @@ export default function App() {
           {error && posts.length === 0 && <div className="error">⚠️ {error}</div>}
           {filteredPosts.map((p, i) => (
             <PostItem key={p.data.id} post={p} active={selected?.data?.id === p.data.id || i === selectedIndex}
-              onClick={() => setSelected(p)} />
+              onClick={() => {
+                setSelectedIndex(i)
+                setSelected(p)
+              }} />
           ))}
           {search && !isRedditSearch && filteredPosts.length === 0 && posts.length > 0 && (
             <div className="empty">No local matches - press Enter to search Reddit</div>
@@ -417,18 +624,19 @@ export default function App() {
           {isRedditSearch && filteredPosts.length === 0 && posts.length === 0 && (
             <div className="empty">No results found</div>
           )}
-          {after && !loading && (
+          {after && !loading && !search.trim() && (
             <div className="load-more">
               <button onClick={() => fetchPosts(sub, after)} className="load-btn">
                 Load More Posts
               </button>
             </div>
           )}
-          {loading && posts.length > 0 && <div className="loading">Loading more...</div>}
+           {loading && posts.length > 0 && <div className="loading">Loading more...</div>}
         </div>
+        <div className="version-footer">v{APP_VERSION}</div>
       </div>
       
-      <div className="right-pane">
+      <div className="right-pane" ref={rightPaneRef} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <PostDetail post={selected} />
       </div>
     </div>

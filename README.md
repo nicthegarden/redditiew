@@ -33,7 +33,9 @@ A modern, feature-rich Reddit client available in both Terminal User Interface (
 - **Real-time Updates** - Live comment and post data
 - **Customizable Theme** - Light/dark mode support
 - **Sort Toggle** - Switch between hot and new posts
-- **Keyboard Shortcuts** - Quick access to favorite subreddits (1-9)
+- **Keyboard Navigation** - Arrow keys, PageDown, Spacebar for efficient browsing
+- **Touch Gestures** - Swipe left/right for post navigation, up/down for scrolling
+- **Auto-load Comments** - Comments load automatically when post is selected
 
 ## 🏗️ Architecture
 

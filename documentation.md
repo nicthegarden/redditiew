@@ -248,10 +248,59 @@ The web interface is built with React 19 and Vite.
 
 - **Modern Responsive Design**: Works on desktop and tablet
 - **Mouse Support**: Full point-and-click navigation
+- **Keyboard Navigation**: Full keyboard control for efficient browsing
+- **Touch/Swipe Support**: Swipe gestures for mobile devices
 - **Theme Support**: Light/dark mode toggle
 - **Real-time Updates**: Live post and comment data
 - **Sort Toggle**: Switch between hot and new posts
-- **Keyboard Shortcuts**: 1-9 for favorite subreddits
+- **Comment Auto-load**: Comments load automatically when post is selected
+
+### Keyboard Controls
+
+#### Left Pane (Posts List)
+
+| Key | Action |
+|-----|--------|
+| `↑` Up Arrow | Select previous post |
+| `↓` Down Arrow | Select next post |
+| `Enter` | Open selected post in right pane |
+| `Ctrl+F` | Focus on browser find (in right pane) |
+
+#### Right Pane (Post Details & Comments)
+
+| Key | Action |
+|-----|--------|
+| `→` Right Arrow | Scroll comments down (150px) |
+| `←` Left Arrow | Scroll comments up (150px) |
+| `PageDown` | Scroll comments down by page (400px) |
+| `PageUp` | Scroll comments up by page (400px) |
+| `Spacebar` | Scroll comments down by page, auto-advance to next post when at bottom |
+
+#### Tab Navigation
+
+| Key | Action |
+|-----|--------|
+| `Tab` | Move focus forward (Search → Filter → Posts List) |
+| `Shift+Tab` | Move focus backward (Posts List → Filter → Search) |
+
+### Touch/Swipe Gestures (Mobile)
+
+| Gesture | Action |
+|---------|--------|
+| **Swipe Right** (← direction) | Go to previous post |
+| **Swipe Left** (→ direction) | Go to next post |
+| **Swipe Up** | Scroll comments down in right pane |
+| **Swipe Down** | Scroll comments up in right pane |
+
+**Note:** Swipes require at least 50px movement and must complete within 500ms.
+
+### Navigation Workflow
+
+1. **Browse Posts**: Use `↑↓` arrow keys to navigate the left pane
+2. **Select Post**: Press `Enter` or click to open in right pane
+3. **Read Details**: Post content and comments auto-load in right pane
+4. **Scroll Comments**: Use arrow keys, PageDown/PageUp, or spacebar
+5. **Auto-Advance**: When scrolling reaches the bottom of comments with spacebar, automatically move to next post
 
 ### Ports
 
