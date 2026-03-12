@@ -644,20 +644,20 @@ export default function App() {
           )}
            {loading && posts.length > 0 && <div className="loading">Loading more...</div>}
          </div>
-         
-         <div className="version-footer">
-           <span className="version-text">v{APP_VERSION}</span>
-           <button 
-             className="reader-mode-btn"
-             onClick={() => setReaderMode(!readerMode)}
-             title={readerMode ? "Exit Reader Mode" : "Enter Reader Mode"}
-           >
-             {readerMode ? '📖 Exit Reader' : '📖 Reader Mode'}
-           </button>
-         </div>
-       </div>
-       
-       <div className="right-pane" ref={rightPaneRef} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+          
+          <div className="version-footer">
+            <span className="version-text">v{APP_VERSION}</span>
+            <button 
+              className="reader-mode-btn"
+              onClick={() => setReaderMode(!readerMode)}
+              title={readerMode ? "Exit Reader Mode" : "Enter Reader Mode"}
+            >
+              {readerMode ? '📖 Exit Reader' : '📖 Reader Mode'}
+            </button>
+          </div>
+        </div>
+        
+        <div className="right-pane" ref={rightPaneRef} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <PostDetail post={selected} />
       </div>
     </div>

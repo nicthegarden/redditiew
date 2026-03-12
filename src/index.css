@@ -1002,7 +1002,12 @@ body.light {
 /* Hide elements in reader mode */
 .filter-bar.hidden,
 .posts-list.hidden {
-  display: none;
+   display: none;
+}
+
+/* Version footer always visible, even in reader mode */
+.version-footer {
+   display: flex !important;
 }
 
 /* Mobile-only Reader Mode button */
