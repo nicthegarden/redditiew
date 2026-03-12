@@ -193,6 +193,8 @@ export default function App() {
   const [readerMode, setReaderMode] = useState(false)
   const [twoFingerStartX, setTwoFingerStartX] = useState(0)
   const [fingerCount, setFingerCount] = useState(0)
+  const [sort, setSort] = useState<'hot' | 'new' | 'top'>('hot')
+  const [sortingButtonsEnabled, setSortingButtonsEnabled] = useState(true)
   
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -298,19 +300,21 @@ export default function App() {
         setDefaultSubreddit(defaultSub)
         setSub(defaultSub)
         setInput(defaultSub)
+        setSortingButtonsEnabled(config.web.sortingButtonsEnabled ?? true)
       } catch (err) {
         console.error('Failed to load config:', err)
         // Use hardcoded defaults if config fails
         setDefaultSubreddit('sysadmin')
         setSub('sysadmin')
         setInput('sysadmin')
+        setSortingButtonsEnabled(true)
       }
       setConfigLoaded(true)
     }
     initConfig()
   }, [])
 
-  const fetchPosts = useCallback(async (subreddit: string, cursor: string | null = null) => {
+  const fetchPosts = useCallback(async (subreddit: string, cursor: string | null = null, sortType: 'hot' | 'new' | 'top' = 'hot') => {
     const isMore = !!cursor
     const cachedData = cached[subreddit]
     
@@ -324,7 +328,7 @@ export default function App() {
     
     try {
       const limit = 50
-      const target = `${API_BASE}/r/${subreddit}.json?limit=${limit}${cursor ? '&after=' + cursor : ''}`
+      const target = `${API_BASE}/r/${subreddit}.json?limit=${limit}&sort=${sortType}${cursor ? '&after=' + cursor : ''}`
       const res = await fetch(target)
       
       // Handle rate limiting
@@ -377,7 +381,16 @@ export default function App() {
     setInput(subreddit)
     setSelected(null)
     setSelectedIndex(0)
-    fetchPosts(subreddit)
+    fetchPosts(subreddit, null, sort)
+  }
+
+  const handleSortChange = (newSort: 'hot' | 'new' | 'top') => {
+    setSort(newSort)
+    setSelected(null)
+    setSelectedIndex(0)
+    setAfter(null)
+    setPosts([])
+    fetchPosts(sub, null, newSort)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -653,9 +666,35 @@ export default function App() {
             autoFocus
           />
           <button className="search-btn" tabIndex={-1}>Go</button>
-        </form>
-        
-        <div className="quick-links" tabIndex={-1}>
+         </form>
+         
+         {sortingButtonsEnabled && (
+           <div className="sort-buttons" tabIndex={-1}>
+             <button 
+               className={`sort-btn ${sort === 'hot' ? 'active' : ''}`}
+               onClick={() => handleSortChange('hot')}
+               tabIndex={-1}
+             >
+               ◉ Hot
+             </button>
+             <button 
+               className={`sort-btn ${sort === 'new' ? 'active' : ''}`}
+               onClick={() => handleSortChange('new')}
+               tabIndex={-1}
+             >
+               ◉ New
+             </button>
+             <button 
+               className={`sort-btn ${sort === 'top' ? 'active' : ''}`}
+               onClick={() => handleSortChange('top')}
+               tabIndex={-1}
+             >
+               ◉ Top
+             </button>
+           </div>
+         )}
+         
+         <div className="quick-links" tabIndex={-1}>
           {SUBREDDIT_SUGGESTIONS.slice(0, 8).map(s => (
             <button key={s} className={`quick-link ${sub === s ? 'active' : ''}`}
               onClick={() => handleSub(s)} tabIndex={-1}>

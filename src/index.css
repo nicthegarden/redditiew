@@ -196,6 +196,39 @@ body.light {
   color: white;
 }
 
+.sort-buttons {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.sort-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 60px;
+}
+
+.sort-btn:hover {
+  border-color: var(--accent-orange);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.sort-btn.active {
+  border-color: var(--accent-orange);
+  color: var(--accent-orange);
+  background: var(--bg-secondary);
+}
+
 .filter-bar {
   padding: 8px 16px;
   border-bottom: 1px solid var(--border-color);
@@ -688,6 +721,16 @@ body.light {
 
   .quick-link {
     padding: 2px 8px;
+    font-size: 11px;
+  }
+
+  .sort-buttons {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+
+  .sort-btn {
+    padding: 4px 8px;
     font-size: 11px;
   }
 

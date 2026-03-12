@@ -20,7 +20,8 @@
   "web": {
     "default_subreddit": "sysadmin",
     "posts_per_page": 20,
-    "theme": "dark"
+    "theme": "dark",
+    "sortingButtonsEnabled": true
   },
   "api": {
     "base_url": "http://localhost:8765/api",

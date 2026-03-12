@@ -10,6 +10,7 @@ interface AppConfig {
     default_subreddit: string
     posts_per_page: number
     theme: string
+    sortingButtonsEnabled?: boolean
   }
   api: {
     base_url: string
@@ -38,11 +39,12 @@ export async function loadConfig(): Promise<AppConfig> {
         list_height: 10,
         max_title_length: 80,
       },
-      web: {
-        default_subreddit: 'sysadmin',
-        posts_per_page: 20,
-        theme: 'dark',
-      },
+       web: {
+         default_subreddit: 'sysadmin',
+         posts_per_page: 20,
+         theme: 'dark',
+         sortingButtonsEnabled: true,
+       },
       api: {
         base_url: '/api',
         timeout_seconds: 10,
