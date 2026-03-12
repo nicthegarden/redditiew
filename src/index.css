@@ -529,6 +529,17 @@ body.light {
   color: var(--text-primary);
 }
 
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--text-tertiary);
+}
+
+.action-btn:disabled:hover {
+  background: none;
+  color: var(--text-tertiary);
+}
+
 .action-btn.upvote:hover {
   color: var(--success);
 }

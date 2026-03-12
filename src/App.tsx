@@ -68,8 +68,24 @@ function useTouchGestures(onSwipeLeft: () => void, onSwipeRight: () => void, onS
 }
 
 const SUBREDDIT_SUGGESTIONS = [
-  'sysadmin', 'IT', 'linux', 'homelab', 'networking', 'devops', 'technology',
-  'programming', 'javascript', 'python', 'docker', 'kubernetes', 'aws',
+  // Core Sysadmin (default start with sysadmin)
+  'sysadmin',
+  // Virtualization & Infrastructure
+  'proxmox', 'selfhosted', 'homelab', 'unraid',
+  // Linux Distributions
+  'linux', 'archlinux', 'debian', 'ubuntu',
+  // Windows & IT
+  'windows', 'IT',
+  // DevOps & Containers
+  'devops', 'docker', 'kubernetes', 'ceph',
+  // Networking & Security
+  'networking', 'netsec',
+  // Cloud & Business
+  'msp', 'aws',
+  // General Tech
+  'technology',
+  // Development
+  'programming', 'javascript', 'python',
 ]
 
 interface RedditPost {
@@ -391,6 +407,28 @@ export default function App() {
     setAfter(null)
     setPosts([])
     fetchPosts(sub, null, newSort)
+  }
+
+  const handleNextPost = () => {
+    const filteredPosts = search.trim()
+      ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
+      : posts
+    const nextIdx = Math.min(selectedIndex + 1, filteredPosts.length - 1)
+    if (nextIdx !== selectedIndex) {
+      setSelectedIndex(nextIdx)
+      setSelected(filteredPosts[nextIdx])
+    }
+  }
+
+  const handlePreviousPost = () => {
+    const filteredPosts = search.trim()
+      ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase()))
+      : posts
+    const prevIdx = Math.max(selectedIndex - 1, 0)
+    if (prevIdx !== selectedIndex) {
+      setSelectedIndex(prevIdx)
+      setSelected(filteredPosts[prevIdx])
+    }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -756,8 +794,14 @@ export default function App() {
           </div>
         </div>
         
-        <div className="right-pane" ref={rightPaneRef} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-        <PostDetail post={selected} />
+         <div className="right-pane" ref={rightPaneRef} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <PostDetail 
+          post={selected}
+          onNextPost={handleNextPost}
+          onPreviousPost={handlePreviousPost}
+          canGoNext={selectedIndex < (search.trim() ? posts.filter(p => p.data.title.toLowerCase().includes(search.toLowerCase())).length - 1 : posts.length - 1)}
+          canGoPrevious={selectedIndex > 0}
+        />
       </div>
     </div>
   )

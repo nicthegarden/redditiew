@@ -28,6 +28,10 @@ interface PostDetailProps {
       }
     }
   } | null
+  onNextPost?: () => void
+  onPreviousPost?: () => void
+  canGoNext?: boolean
+  canGoPrevious?: boolean
 }
 
 function formatTime(ts: number): string {
@@ -72,7 +76,7 @@ function getMediaUrl(data: any): string | null {
   return null
 }
 
-export default function PostDetail({ post }: PostDetailProps) {
+export default function PostDetail({ post, onNextPost, onPreviousPost, canGoNext = true, canGoPrevious = true }: PostDetailProps) {
   if (!post) {
     return (
       <div className="post-detail-empty">
@@ -146,8 +150,22 @@ export default function PostDetail({ post }: PostDetailProps) {
       )}
 
       <div className="post-actions">
-        <button className="action-btn">↑ Upvote</button>
-        <button className="action-btn">↓ Downvote</button>
+        <button 
+          className="action-btn" 
+          onClick={onPreviousPost}
+          disabled={!canGoPrevious}
+          title="Go to previous post (Arrow Left)"
+        >
+          ⬅️ Previous
+        </button>
+        <button 
+          className="action-btn" 
+          onClick={onNextPost}
+          disabled={!canGoNext}
+          title="Go to next post (Arrow Right)"
+        >
+          Next ➡️
+        </button>
         <button className="action-btn">💾 Save</button>
         <a href={`https://reddit.com${data.permalink}`} target="_blank" rel="noopener noreferrer" className="action-btn">
           🔗 Open on Reddit
