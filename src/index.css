@@ -915,3 +915,70 @@ body.light {
 .collapse-btn:hover {
   text-decoration: underline;
 }
+
+/* Reader Mode Styles */
+.version-footer {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.version-text {
+  color: var(--text-secondary);
+  font-size: 12px;
+  flex: 1;
+}
+
+.reader-mode-btn {
+  background: var(--accent-orange);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+}
+
+.reader-mode-btn:hover {
+  background-color: #ff5722;
+}
+
+.reader-mode-btn:active {
+  background-color: #e64100;
+}
+
+/* Hide elements in reader mode */
+.filter-bar.hidden,
+.posts-list.hidden {
+  display: none;
+}
+
+/* Mobile-only Reader Mode button */
+@media (min-width: 769px) {
+  .reader-mode-btn {
+    display: none;
+  }
+}
+
+/* Tablet/Mobile adjustments for Reader Mode */
+@media (max-width: 768px) {
+  .version-footer {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .version-text {
+    font-size: 11px;
+  }
+
+  .reader-mode-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}

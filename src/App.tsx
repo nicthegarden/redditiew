@@ -190,6 +190,7 @@ export default function App() {
   })
   const [commentScrollPos, setCommentScrollPos] = useState(0)
   const [commentIsAtBottom, setCommentIsAtBottom] = useState(false)
+  const [readerMode, setReaderMode] = useState(false)
   
   const listRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -603,7 +604,7 @@ export default function App() {
           ))}
         </div>
 
-        <div className="filter-bar">
+        <div className={`filter-bar ${readerMode ? 'hidden' : ''}`}>
           <input
             ref={filterRef}
             className="filter-input"
@@ -618,7 +619,7 @@ export default function App() {
           />
         </div>
         
-        <div className="posts-list" ref={listRef} onKeyDown={handleKeyDown} tabIndex={0}>
+        <div className={`posts-list ${readerMode ? 'hidden' : ''}`} ref={listRef} onKeyDown={handleKeyDown} tabIndex={0}>
           {loading && posts.length === 0 && <div className="loading">Loading...</div>}
           {error && posts.length === 0 && <div className="error">⚠️ {error}</div>}
           {filteredPosts.map((p, i) => (
@@ -643,7 +644,16 @@ export default function App() {
           )}
            {loading && posts.length > 0 && <div className="loading">Loading more...</div>}
         </div>
-        <div className="version-footer">v{APP_VERSION}</div>
+         <div className="version-footer">
+          <span className="version-text">v{APP_VERSION}</span>
+          <button 
+            className="reader-mode-btn"
+            onClick={() => setReaderMode(!readerMode)}
+            title={readerMode ? "Exit Reader Mode" : "Enter Reader Mode"}
+          >
+            {readerMode ? '📖 Exit Reader' : '📖 Reader Mode'}
+          </button>
+        </div>
       </div>
       
       <div className="right-pane" ref={rightPaneRef} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>

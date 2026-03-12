@@ -492,7 +492,15 @@ netstat -ano | findstr :8765  # Windows
 
 ## 📝 Recent Changes
 
-### Latest Release (v1.1.3)
+### Latest Release (v1.1.4)
+- ✨ **NEW: Mobile Reader Mode** - Cleaner reading experience on mobile/tablet
+  - Hide thread listing to focus on reading selected post
+  - Reader Mode button next to version (mobile only)
+  - Hide search bar in Reader Mode for maximum space
+  - Toggle button to switch between modes instantly
+  - Desktop view unaffected (button hidden on desktop)
+
+### Previous Release (v1.1.3)
 - ✨ **NEW: Subreddit-Scoped Search Endpoint** - `/api/r/:subreddit/search.json?q=:query`
   - Search results are now restricted to the current subreddit
   - 60-second caching to prevent rate limiting
