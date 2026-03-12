@@ -145,6 +145,48 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
+    // Handle subreddit search FIRST (must come before generic subreddit match)
+    // Pattern: /api/r/:subreddit/search.json?q=:query
+    const subredditSearchMatch = pathname.match(/^\/api\/r\/([^/.]+)\/search(?:\.json)?(?:\?|$)/)
+    if (subredditSearchMatch) {
+      const subreddit = subredditSearchMatch[1]
+      const query = parsedUrl.query.q
+
+      // Validate inputs
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        sendError(res, 'Search query is required and must be at least 1 character')
+        return
+      }
+
+      const limit = parsedUrl.query.limit || '50'
+      const type = parsedUrl.query.type || 'link'
+      
+      const redditUrl = `https://www.reddit.com/r/${subreddit}/search.json?q=${encodeURIComponent(query)}&type=${type}&restrict_sr=on&limit=${limit}`
+      const cacheKey = `subreddit_search:${redditUrl}`
+
+      // Check cache
+      const cached = getCache(cacheKey)
+      if (cached) {
+        console.log(`  [CACHE HIT]`)
+        setHeaders(res, { 'X-Cache': 'HIT' })
+        res.writeHead(200)
+        res.end(cached)
+        return
+      }
+
+      // Fetch from Reddit
+      const result = await fetchFromReddit(redditUrl)
+      
+      if (result.status === 200) {
+        setCache(cacheKey, result.data)
+      }
+
+      setHeaders(res, { 'X-Cache': result.status === 200 ? 'MISS' : 'ERROR' })
+      res.writeHead(result.status)
+      res.end(result.data)
+      return
+    }
+
      // Parse subreddit from /api/r/:subreddit or /api/r/:subreddit.json or /api/r/:subreddit/:sort.json
      // Matches: /api/r/sysadmin, /api/r/sysadmin.json, /api/r/sysadmin/hot, /api/r/sysadmin/hot.json
      const subredditMatch = pathname.match(/^\/api\/r\/([^/.]+)(?:\/([a-z]+))?(?:\.json)?(?:\/|$)/)
@@ -277,6 +319,7 @@ server.listen(API_PORT, '0.0.0.0', () => {
 │  GET /api/r/:subreddit                                 │
 │  GET /api/r/:subreddit/:sort (hot/new/top...)          │
 │  GET /api/r/:subreddit/comments/:id                    │
+│  GET /api/r/:subreddit/search.json?q=:query            │
 │  GET /api/search.json?q=:query                         │
 │  GET /api/config                                       │
 │  GET /health                                           │

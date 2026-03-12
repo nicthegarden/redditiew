@@ -1,3 +1,3 @@
 // Auto-generated version file
-export const APP_VERSION = '1.1.2'
+export const APP_VERSION = '1.1.3'
 export const VERSION_BUILD_DATE = new Date().toISOString()

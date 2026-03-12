@@ -400,10 +400,16 @@ GET /api/r/:subreddit/new
 GET /api/r/:subreddit/comments/:id
 ```
 
-**Search Posts**
+**Search All of Reddit**
 ```
 GET /api/search.json?q=query&type=link&limit=50
 ```
+
+**Search Within a Subreddit (New in v1.1.3)**
+```
+GET /api/r/:subreddit/search.json?q=query&type=link&limit=50
+```
+Returns search results restricted to the specified subreddit with 60-second caching.
 
 **Health Check**
 ```
@@ -415,7 +421,7 @@ GET /health
 GET /api/stats
 ```
 
-See the API server implementation in `api-server.ts` for complete details.
+See the API server implementation in `api-server.js` for complete details.
 
 ## 🐛 Troubleshooting
 
@@ -486,25 +492,37 @@ netstat -ano | findstr :8765  # Windows
 
 ## 📝 Recent Changes
 
-### Latest Release (v0.4.0)
+### Latest Release (v1.1.3)
+- ✨ **NEW: Subreddit-Scoped Search Endpoint** - `/api/r/:subreddit/search.json?q=:query`
+  - Search results are now restricted to the current subreddit
+  - 60-second caching to prevent rate limiting
+  - Validates query parameter (1+ characters required)
+  - Properly handles special characters in search queries
+  - Returns `404` for invalid subreddits
+- 🐛 Fixed: Web UI now properly calls subreddit search instead of global search
+
+### Previous Release (v1.1.2)
+- ✨ Updated Web UI to use subreddit-scoped search when pressing Enter
+- ✨ "Subreddit search: query" header indicator
+
+### Previous Release (v1.1.1)
+- 🐛 Fixed missing `onKeyDown` handler for filter input
+- 🐛 Fixed HTTP error handling in search submissions
+- 🐛 Fixed `isRedditSearch` flag reset behavior
+
+### Previous Release (v1.1.0)
+- ✨ Keyboard navigation (arrow keys, PageDown, Spacebar)
+- ✨ Touch/swipe gestures for mobile (left/right, up/down)
+- ✨ Auto-fetch comments when post selected
+
+### v0.4.0 and Earlier
 - ✨ Warning system for comment boundary navigation with orange highlighting
 - 🐛 Fixed TUI hang on quit with 30-second HTTP timeout
-- 🐛 All HTTP requests now timeout gracefully
-
-### Previous Release (v0.3.0)
 - ✨ Smart arrow key navigation in comments view
 - ✨ Sort toggle functionality (hot/new posts)
 - ✨ Keyboard shortcuts (1-9) for favorite subreddits
 - ✨ Auto-close comments when navigating posts
 - ✨ Configuration support for defaults
-
-### Previous (v0.2.0)
-- ✨ Enhanced comment scrolling with proper height calculation
-- ✨ Open posts directly in browser with `w` key
-- ✨ Increased page scroll distance for faster navigation
-- ✨ 200 posts per page by default (up from 50)
-- 🐛 Fixed comment scrolling state propagation
-- 🐛 Fixed list display bug affecting post visibility
 
 See [git log](https://github.com/nicthegarden/redditiew/commits) for complete history.
 
